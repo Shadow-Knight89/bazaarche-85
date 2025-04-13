@@ -41,7 +41,9 @@ const Admin = () => {
   const showGiftCodesTab = permissions.manageGiftCodes !== false;
   const showPurchasesTab = permissions.viewPurchases !== false;
   const showUsersTab = permissions.manageUsers === true;
-  const showAdminsTab = user.id === 'admin'; // Only the main admin can manage other admins
+  
+  // Allow any admin to see the admin management tab
+  const showAdminsTab = true; // Changed from user.id === 'admin' to always show
   
   return (
     <div className="min-h-screen flex flex-col">

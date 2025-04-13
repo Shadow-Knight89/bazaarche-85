@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAppContext } from "../contexts/AppContext";
 import { formatPrice, formatDate } from "../utils/formatters";
 import Navbar from "../components/Navbar";
@@ -8,24 +8,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShoppingCart, ArrowLeft } from "lucide-react";
-import { Comment as CommentType } from "../types";
 import CommentSection from "../components/CommentSection";
 
 const ProductDetail = () => {
-  const { productId } = useParams();
+  const { productId, customId } = useParams();
   const navigate = useNavigate();
-  const { products, addToCart, user } = useAppContext();
+  const location = useLocation();
+  const { products, addToCart, user, getProductByCustomId } = useAppContext();
   const [activeImage, setActiveImage] = useState(0);
   
-  // Find the product by ID
-  const product = products.find((p) => p.id === productId);
+  // Find the product by ID or custom ID
+  let product = productId ? products.find((p) => p.id === productId) : null;
+  
+  if (!product && customId) {
+    product = getProductByCustomId(customId);
+  }
   
   // Handle if product not found
   useEffect(() => {
-    if (!product && productId) {
+    if (!product && (productId || customId)) {
       navigate("/not-found");
     }
-  }, [product, productId, navigate]);
+  }, [product, productId, customId, navigate]);
   
   if (!product) {
     return null;
@@ -49,7 +53,7 @@ const ProductDetail = () => {
             onClick={() => navigate(-1)} 
             className="mb-4"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="ml-2 h-4 w-4" />
             بازگشت
           </Button>
           
@@ -63,12 +67,12 @@ const ProductDetail = () => {
               <img 
                 src={product.images[activeImage] || "/placeholder.svg"} 
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
             
             {product.images.length > 1 && (
-              <div className="flex space-x-2 overflow-x-auto py-2">
+              <div className="flex space-s-2 overflow-x-auto py-2 rtl">
                 {product.images.map((image, index) => (
                   <div 
                     key={index} 
@@ -110,7 +114,14 @@ const ProductDetail = () => {
             {product.category && (
               <div>
                 <span className="text-sm text-muted-foreground">دسته‌بندی:</span>
-                <span className="ml-2 text-sm font-medium">{product.category}</span>
+                <span className="mr-2 text-sm font-medium">{product.category}</span>
+              </div>
+            )}
+            
+            {product.customId && (
+              <div className="text-xs flex items-center">
+                <span className="text-muted-foreground ml-1">شناسه محصول:</span>
+                <span className="font-mono">{product.customId}</span>
               </div>
             )}
             
@@ -156,7 +167,7 @@ const ProductDetail = () => {
                     <img 
                       src={similarProduct.images[0] || "/placeholder.svg"}
                       alt={similarProduct.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   </div>
                   <CardContent className="p-4">
@@ -165,7 +176,11 @@ const ProductDetail = () => {
                       <span className="font-medium text-primary">
                         {formatPrice(similarProduct.discountedPrice)}
                       </span>
-                      <Link to={`/products/${similarProduct.id}`}>
+                      <Link to={
+                          similarProduct.customId 
+                          ? `/p/${similarProduct.customId}` 
+                          : `/products/${similarProduct.id}`
+                        }>
                         <Button variant="outline" size="sm">مشاهده</Button>
                       </Link>
                     </div>

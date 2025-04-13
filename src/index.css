@@ -83,6 +83,20 @@
   }
 }
 
+/* Deal with RTL for some element that need special treatment */
+.rtl {
+  direction: rtl;
+}
+
+.ltr {
+  direction: ltr;
+}
+
+/* Fix scroll behavior in dialogs */
+[data-radix-scroll-area-viewport] > div {
+  height: 100%;
+}
+
 /* Custom components */
 .product-card {
   @apply rounded-lg border shadow-sm transition-all hover:shadow-md;
@@ -98,4 +112,14 @@
 
 .discount-badge {
   @apply bg-orange-500 text-white text-xs font-semibold px-2 py-1 rounded absolute top-2 right-2;
+}
+
+/* Image fixes */
+.object-contain {
+  object-fit: contain;
+}
+
+/* Image in product cards */
+.aspect-square img, .aspect-[4/3] img, .aspect-[3/2] img {
+  @apply object-contain;
 }

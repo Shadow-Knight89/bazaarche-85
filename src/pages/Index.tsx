@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
 const Index = () => {
-  const { products, categories } = useAppContext();
+  const { products, categories, storeName } = useAppContext();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -26,6 +26,11 @@ const Index = () => {
     
     return categoryMatch && searchMatch;
   });
+
+  // Handle category change
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value === "all" ? null : value);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -46,7 +51,10 @@ const Index = () => {
               />
             </div>
             
-            <Select value={selectedCategory || ""} onValueChange={(value) => setSelectedCategory(value || null)}>
+            <Select 
+              value={selectedCategory || "all"} 
+              onValueChange={handleCategoryChange}
+            >
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="همه دسته‌بندی‌ها" />
               </SelectTrigger>

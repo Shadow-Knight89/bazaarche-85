@@ -1,7 +1,10 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, CartItem, GiftCode, User, Comment, Reply, Purchase, Category } from '../types';
+import { Product, CartItem, GiftCode, User, Comment, Reply, Purchase, Category, SecurityQuestion, AdminPermissions, LoginAttempt } from '../types';
 import { toast } from '../components/ui/use-toast';
+
+// Store name constant
+const STORE_NAME = "بازارچه الکترونیکی دبیرستان شهید بهشتی";
 
 // Default products
 const DEFAULT_PRODUCTS: Product[] = [
@@ -15,6 +18,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     images: ['/placeholder.svg'],
     category: 'لپ تاپ',
     createdAt: new Date().toISOString(),
+    customId: 'gaming-laptop',
   },
   {
     id: '2',
@@ -26,6 +30,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     images: ['/placeholder.svg'],
     category: 'گوشی',
     createdAt: new Date().toISOString(),
+    customId: 'smart-phone',
   },
   {
     id: '3',
@@ -37,6 +42,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     images: ['/placeholder.svg'],
     category: 'هدفون',
     createdAt: new Date().toISOString(),
+    customId: 'wireless-headphones',
   },
 ];
 
@@ -80,8 +86,29 @@ const DEFAULT_USERS: User[] = [
     username: 'admin',
     password: 'admin123',
     isAdmin: true,
+    adminPermissions: {
+      manageProducts: true,
+      manageCategories: true,
+      manageGiftCodes: true,
+      manageUsers: true,
+      viewPurchases: true,
+      manageComments: true,
+      customPrefix: "مدیر ارشد",
+      customPrefixColor: "#ff0000"
+    },
+    securityQuestion: {
+      question: "نام اولین معلم شما چه بود؟",
+      answer: "admin"
+    },
+    canComment: true
   }
 ];
+
+// Login rate limiting configuration
+const RATE_LIMIT = {
+  maxAttempts: 5,
+  timeWindow: 5 * 60 * 1000, // 5 minutes in milliseconds
+};
 
 interface AppContextType {
   products: Product[];
@@ -92,12 +119,18 @@ interface AppContextType {
   categories: Category[];
   comments: Comment[];
   purchases: Purchase[];
+  users: User[];
+  storeName: string;
   
   // Auth functions
   login: (username: string, password: string) => boolean;
   logout: () => void;
-  register: (username: string, password: string) => boolean;
+  register: (username: string, password: string, securityQuestion?: SecurityQuestion) => boolean;
   changePassword: (currentPassword: string, newPassword: string) => boolean;
+  checkLoginRateLimit: () => { limited: boolean; remainingTime: number };
+  getUserSecurityQuestion: (username: string) => string | null;
+  verifySecurityAnswer: (username: string, answer: string) => boolean;
+  resetPassword: (username: string, newPassword: string) => void;
   
   // Product functions
   addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => void;
@@ -109,6 +142,7 @@ interface AppContextType {
   removeFromCart: (productId: string) => void;
   updateCartItemQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  resetCart: () => void;
   
   // Gift code functions
   addGiftCode: (giftCode: Omit<GiftCode, 'id' | 'isUsed' | 'usedBy' | 'createdAt'>) => void;
@@ -127,8 +161,21 @@ interface AppContextType {
   // Purchase functions
   addPurchase: () => void;
   
+  // User management functions
+  banUser: (userId: string) => void;
+  unbanUser: (userId: string) => void;
+  resetUserPassword: (userId: string, newPassword: string) => void;
+  deleteUser: (userId: string) => void;
+  
+  // Admin management functions
+  addAdmin: (username: string, password: string, permissions: AdminPermissions) => boolean;
+  updateAdminPermissions: (userId: string, permissions: AdminPermissions) => void;
+  
   // Calculate total
   calculateTotal: () => { subtotal: number; discount: number; total: number };
+  
+  // Get product by custom ID
+  getProductByCustomId: (customId: string) => Product | undefined;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -143,6 +190,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const USERS_KEY = 'shop-users';
   const COMMENTS_KEY = 'shop-comments';
   const PURCHASES_KEY = 'shop-purchases';
+  const LOGIN_ATTEMPTS_KEY = 'shop-login-attempts';
   
   // State
   const [products, setProducts] = useState<Product[]>(() => {
@@ -187,6 +235,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const [appliedGiftCode, setAppliedGiftCode] = useState<GiftCode | null>(null);
   
+  const [loginAttempts, setLoginAttempts] = useState<LoginAttempt[]>(() => {
+    const storedAttempts = localStorage.getItem(LOGIN_ATTEMPTS_KEY);
+    return storedAttempts ? JSON.parse(storedAttempts) : [];
+  });
+  
   // Effects to sync state with localStorage
   useEffect(() => {
     localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
@@ -224,26 +277,107 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(PURCHASES_KEY, JSON.stringify(purchases));
   }, [purchases]);
   
+  useEffect(() => {
+    localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(loginAttempts));
+  }, [loginAttempts]);
+  
+  // Helper functions for login rate limiting
+  const getClientIp = (): string => {
+    // In a real app, this would come from the server
+    // For our example, we'll create a fingerprint based on browser data
+    return navigator.userAgent + navigator.language;
+  };
+  
+  const checkLoginRateLimit = () => {
+    const now = Date.now();
+    const ip = getClientIp();
+    
+    // Clean up old attempts
+    const validAttempts = loginAttempts.filter(attempt => 
+      now - attempt.timestamp < RATE_LIMIT.timeWindow
+    );
+    
+    // Find attempts for this IP
+    const ipAttempts = validAttempts.filter(attempt => attempt.ip === ip);
+    
+    if (ipAttempts.length >= RATE_LIMIT.maxAttempts) {
+      // IP is rate limited
+      const oldestAttempt = ipAttempts[0];
+      const remainingTime = RATE_LIMIT.timeWindow - (now - oldestAttempt.timestamp);
+      return { limited: true, remainingTime };
+    }
+    
+    return { limited: false, remainingTime: 0 };
+  };
+  
+  const recordLoginAttempt = (success: boolean) => {
+    const now = Date.now();
+    const ip = getClientIp();
+    
+    // Clean up old attempts
+    const validAttempts = loginAttempts.filter(attempt => 
+      now - attempt.timestamp < RATE_LIMIT.timeWindow
+    );
+    
+    if (success) {
+      // If successful login, remove this IP's attempts
+      const newAttempts = validAttempts.filter(attempt => attempt.ip !== ip);
+      setLoginAttempts(newAttempts);
+    } else {
+      // Add a new failed attempt
+      const newAttempt: LoginAttempt = {
+        ip,
+        timestamp: now,
+        count: 1
+      };
+      
+      setLoginAttempts([...validAttempts, newAttempt]);
+    }
+  };
+  
   // Auth functions
   const login = (username: string, password: string): boolean => {
+    // Check rate limiting
+    const { limited } = checkLoginRateLimit();
+    if (limited) {
+      return false;
+    }
+    
     const foundUser = users.find(u => u.username === username && u.password === password);
     
     if (foundUser) {
+      if (foundUser.isBanned) {
+        toast({
+          title: "حساب مسدود شده",
+          description: "حساب کاربری شما مسدود شده است. لطفا با مدیر سایت تماس بگیرید.",
+          variant: "destructive",
+        });
+        recordLoginAttempt(false);
+        return false;
+      }
+      
       // Create a copy without the password for the session
       const { password: _, ...userWithoutPassword } = foundUser;
       setUser({ ...userWithoutPassword, password: '' });
+      
+      // Record successful login
+      recordLoginAttempt(true);
+      
       return true;
     }
     
+    // Record failed login
+    recordLoginAttempt(false);
     return false;
   };
   
   const logout = () => {
     setUser(null);
     setAppliedGiftCode(null);
+    setCart([]);
   };
 
-  const register = (username: string, password: string): boolean => {
+  const register = (username: string, password: string, securityQuestion?: SecurityQuestion): boolean => {
     // Check if username already exists
     if (users.some(u => u.username === username)) {
       return false;
@@ -255,6 +389,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       username,
       password,
       isAdmin: false,
+      securityQuestion,
+      canComment: true
     };
 
     setUsers(prev => [...prev, newUser]);
@@ -282,8 +418,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
   
+  // Security question functions
+  const getUserSecurityQuestion = (username: string): string | null => {
+    const foundUser = users.find(u => u.username === username);
+    return foundUser?.securityQuestion?.question || null;
+  };
+  
+  const verifySecurityAnswer = (username: string, answer: string): boolean => {
+    const foundUser = users.find(u => u.username === username);
+    if (!foundUser || !foundUser.securityQuestion) return false;
+    
+    return foundUser.securityQuestion.answer.toLowerCase() === answer.trim().toLowerCase();
+  };
+  
+  const resetPassword = (username: string, newPassword: string): void => {
+    setUsers(prev => prev.map(u => {
+      if (u.username === username) {
+        return { ...u, password: newPassword };
+      }
+      return u;
+    }));
+  };
+  
   // Product functions
   const addProduct = (product: Omit<Product, 'id' | 'createdAt'>) => {
+    // Check if customId already exists
+    if (product.customId && products.some(p => p.customId === product.customId)) {
+      toast({
+        title: "خطا",
+        description: "شناسه سفارشی تکراری است. لطفا شناسه دیگری انتخاب کنید.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const newProduct: Product = {
       ...product,
       id: Date.now().toString(),
@@ -298,6 +466,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   
   const editProduct = (id: string, productData: Partial<Omit<Product, 'id' | 'createdAt'>>) => {
+    // Check if customId already exists and it's not the same product
+    if (
+      productData.customId && 
+      products.some(p => p.customId === productData.customId && p.id !== id)
+    ) {
+      toast({
+        title: "خطا",
+        description: "شناسه سفارشی تکراری است. لطفا شناسه دیگری انتخاب کنید.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setProducts((prev) => 
       prev.map((product) => 
         product.id === id ? { ...product, ...productData } : product
@@ -321,6 +502,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       title: "حذف محصول",
       description: "محصول با موفقیت حذف شد",
     });
+  };
+  
+  // Get product by custom ID
+  const getProductByCustomId = (customId: string): Product | undefined => {
+    return products.find(p => p.customId === customId);
   };
   
   // Cart functions
@@ -368,6 +554,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   
   const clearCart = () => {
+    setCart([]);
+    setAppliedGiftCode(null);
+  };
+  
+  const resetCart = () => {
     setCart([]);
     setAppliedGiftCode(null);
   };
@@ -441,7 +632,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const removeCategory = (id: string) => {
     // Check if any products are using this category
-    const productsUsingCategory = products.filter(p => p.category === categories.find(c => c.id === id)?.name);
+    const categoryName = categories.find(c => c.id === id)?.name;
+    if (!categoryName) return;
+    
+    const productsUsingCategory = products.filter(p => p.category === categoryName);
     
     if (productsUsingCategory.length > 0) {
       toast({
@@ -479,12 +673,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addComment = (productId: string, text: string) => {
     if (!user) return;
     
+    // Check if user is banned from commenting
+    if (user.canComment === false) {
+      toast({
+        title: "خطا",
+        description: "شما اجازه ارسال نظر ندارید",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Get admin prefix if applicable
+    let adminPrefix, adminPrefixColor;
+    if (user.isAdmin && user.adminPermissions) {
+      adminPrefix = user.adminPermissions.customPrefix;
+      adminPrefixColor = user.adminPermissions.customPrefixColor;
+    }
+    
     const newComment: Comment = {
       id: Date.now().toString(),
       productId,
       userId: user.id,
       username: user.username,
       isAdmin: user.isAdmin,
+      adminPrefix,
+      adminPrefixColor,
       text,
       createdAt: new Date().toISOString(),
       replies: [],
@@ -500,12 +713,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addReply = (commentId: string, text: string) => {
     if (!user) return;
     
+    // Check if user is banned from commenting
+    if (user.canComment === false) {
+      toast({
+        title: "خطا",
+        description: "شما اجازه ارسال نظر ندارید",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Get admin prefix if applicable
+    let adminPrefix, adminPrefixColor;
+    if (user.isAdmin && user.adminPermissions) {
+      adminPrefix = user.adminPermissions.customPrefix;
+      adminPrefixColor = user.adminPermissions.customPrefixColor;
+    }
+    
     const newReply: Reply = {
       id: Date.now().toString(),
       commentId,
       userId: user.id,
       username: user.username,
       isAdmin: user.isAdmin,
+      adminPrefix,
+      adminPrefixColor,
       text,
       createdAt: new Date().toISOString(),
     };
@@ -530,6 +762,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return comments.filter(comment => comment.productId === productId);
   };
 
+  // User management functions
+  const banUser = (userId: string) => {
+    setUsers(prev => prev.map(u => 
+      u.id === userId ? { ...u, isBanned: true, canComment: false } : u
+    ));
+  };
+  
+  const unbanUser = (userId: string) => {
+    setUsers(prev => prev.map(u => 
+      u.id === userId ? { ...u, isBanned: false, canComment: true } : u
+    ));
+  };
+  
+  const resetUserPassword = (userId: string, newPassword: string) => {
+    setUsers(prev => prev.map(u => 
+      u.id === userId ? { ...u, password: newPassword } : u
+    ));
+  };
+  
+  const deleteUser = (userId: string) => {
+    // Can't delete main admin
+    if (userId === 'admin') return;
+    
+    setUsers(prev => prev.filter(u => u.id !== userId));
+  };
+  
+  // Admin management functions
+  const addAdmin = (username: string, password: string, permissions: AdminPermissions): boolean => {
+    // Check if username already exists
+    if (users.some(u => u.username === username)) {
+      return false;
+    }
+    
+    const newAdmin: User = {
+      id: Date.now().toString(),
+      username,
+      password,
+      isAdmin: true,
+      adminPermissions: permissions,
+      canComment: true,
+      securityQuestion: {
+        question: "نام اولین معلم شما چه بود؟",
+        answer: "admin"
+      }
+    };
+    
+    setUsers(prev => [...prev, newAdmin]);
+    return true;
+  };
+  
+  const updateAdminPermissions = (userId: string, permissions: AdminPermissions) => {
+    setUsers(prev => prev.map(u => 
+      u.id === userId ? { ...u, adminPermissions: permissions } : u
+    ));
+  };
+  
   // Purchase functions
   const addPurchase = () => {
     if (!user || cart.length === 0) return;
@@ -585,10 +873,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     categories,
     comments,
     purchases,
+    users,
+    storeName: STORE_NAME,
     login,
     logout,
     register,
     changePassword,
+    checkLoginRateLimit,
+    getUserSecurityQuestion,
+    verifySecurityAnswer,
+    resetPassword,
     addProduct,
     editProduct,
     removeProduct,
@@ -596,6 +890,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     removeFromCart,
     updateCartItemQuantity,
     clearCart,
+    resetCart,
     addGiftCode,
     applyGiftCode,
     addCategory,
@@ -606,6 +901,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     getCommentsForProduct,
     addPurchase,
     calculateTotal,
+    banUser,
+    unbanUser,
+    resetUserPassword,
+    deleteUser,
+    addAdmin,
+    updateAdminPermissions,
+    getProductByCustomId,
   };
   
   return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
@@ -620,3 +922,5 @@ export const useAppContext = () => {
   
   return context;
 };
+
+export const getStoreName = () => STORE_NAME;

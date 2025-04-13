@@ -6,11 +6,23 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useNavigate, Link } from "react-router-dom";
 import { useAppContext } from "../contexts/AppContext";
 import { toast } from "@/components/ui/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SecurityQuestion } from "../types";
+
+const SECURITY_QUESTIONS = [
+  "نام اولین معلم شما چه بود؟",
+  "نام اولین حیوان خانگی شما چه بود؟",
+  "شهر محل تولد مادر شما کجاست؟",
+  "غذای مورد علاقه دوران کودکی شما چه بود؟",
+  "نام بهترین دوست دوران کودکی شما چه بود؟"
+];
 
 const Register = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [securityQuestion, setSecurityQuestion] = useState(SECURITY_QUESTIONS[0]);
+  const [securityAnswer, setSecurityAnswer] = useState("");
   const navigate = useNavigate();
   const { register } = useAppContext();
 
@@ -26,7 +38,21 @@ const Register = () => {
       return;
     }
     
-    const success = register(username, password);
+    if (securityAnswer.trim() === "") {
+      toast({
+        title: "خطا",
+        description: "لطفا پاسخ سوال امنیتی را وارد کنید",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const securityQuestionData: SecurityQuestion = {
+      question: securityQuestion,
+      answer: securityAnswer.trim().toLowerCase()
+    };
+    
+    const success = register(username, password, securityQuestionData);
     
     if (success) {
       toast({
@@ -93,6 +119,43 @@ const Register = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 placeholder="رمز عبور خود را مجدداً وارد کنید"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="securityQuestion" className="text-sm font-medium">
+                سوال امنیتی
+              </label>
+              <Select 
+                value={securityQuestion}
+                onValueChange={setSecurityQuestion}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="انتخاب سوال امنیتی" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SECURITY_QUESTIONS.map((question, index) => (
+                    <SelectItem key={index} value={question}>
+                      {question}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                این سوال برای بازیابی رمز عبور استفاده خواهد شد
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="securityAnswer" className="text-sm font-medium">
+                پاسخ سوال امنیتی
+              </label>
+              <Input
+                id="securityAnswer"
+                value={securityAnswer}
+                onChange={(e) => setSecurityAnswer(e.target.value)}
+                required
+                placeholder="پاسخ سوال امنیتی را وارد کنید"
               />
             </div>
           </CardContent>

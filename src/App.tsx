@@ -14,6 +14,7 @@ import Admin from "./pages/Admin";
 import ProductDetail from "./pages/ProductDetail";
 import Register from "./pages/Register";
 import ChangePassword from "./pages/ChangePassword";
+import ForgotPassword from "./pages/ForgotPassword";
 
 const queryClient = new QueryClient();
 
@@ -29,7 +30,9 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/products/:productId" element={<ProductDetail />} />
+              <Route path="/p/:customId" element={<ProductDetail />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/change-password" element={<ChangePassword />} />

@@ -9,6 +9,7 @@ export interface Product {
   images: string[];
   category?: string;
   createdAt: string;
+  customId?: string; // For custom product URLs
 }
 
 export interface CartItem {
@@ -27,11 +28,39 @@ export interface GiftCode {
   createdAt: string;
 }
 
+export interface AdminPermissions {
+  manageProducts: boolean;
+  manageCategories: boolean;
+  manageGiftCodes: boolean;
+  manageUsers: boolean;
+  viewPurchases: boolean;
+  manageComments: boolean;
+  customPrefix?: string;
+  customPrefixColor?: string;
+}
+
+export interface SecurityQuestion {
+  question: string;
+  answer: string;
+}
+
+export interface LoginAttempt {
+  ip: string;
+  timestamp: number;
+  count: number;
+}
+
 export interface User {
   id: string;
   username: string;
   password: string;
   isAdmin: boolean;
+  adminPermissions?: AdminPermissions;
+  securityQuestion?: SecurityQuestion;
+  isBanned?: boolean;
+  canComment?: boolean;
+  lastLoginAttempt?: number; // Timestamp for rate limiting
+  failedLoginAttempts?: number; // Count of failed attempts
 }
 
 export interface Comment {
@@ -40,6 +69,8 @@ export interface Comment {
   userId: string;
   username: string;
   isAdmin: boolean;
+  adminPrefix?: string;
+  adminPrefixColor?: string;
   text: string;
   createdAt: string;
   replies: Reply[];
@@ -51,6 +82,8 @@ export interface Reply {
   userId: string;
   username: string;
   isAdmin: boolean;
+  adminPrefix?: string;
+  adminPrefixColor?: string;
   text: string;
   createdAt: string;
 }

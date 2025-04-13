@@ -51,7 +51,7 @@ const Index = () => {
                 <SelectValue placeholder="همه دسته‌بندی‌ها" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">همه دسته‌بندی‌ها</SelectItem>
+                <SelectItem value="all">همه دسته‌بندی‌ها</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.name}>
                     {category.name}

@@ -17,6 +17,15 @@ const GiftCodeManagement = () => {
   const [discountValue, setDiscountValue] = useState("");
   const [isGlobal, setIsGlobal] = useState(true);
   
+  const generateRandomCode = () => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    setCode(result);
+  };
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -59,13 +68,24 @@ const GiftCodeManagement = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="code">کد تخفیف</Label>
-              <Input
-                id="code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="مثال: WELCOME10"
-                required
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="مثال: WELCOME10"
+                  required
+                  className="flex-1"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={generateRandomCode}
+                  className="whitespace-nowrap"
+                >
+                  تولید کد تصادفی
+                </Button>
+              </div>
             </div>
             
             <div className="space-y-2">
@@ -78,6 +98,11 @@ const GiftCodeManagement = () => {
                 placeholder={discountType === "percentage" ? "درصد تخفیف" : "مقدار تخفیف (تومان)"}
                 required
               />
+              {discountType === "percentage" && (
+                <p className="text-xs text-muted-foreground">
+                  مقدار باید بین 1 تا 100 باشد
+                </p>
+              )}
             </div>
           </div>
           

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, GiftCode, User } from '../types';
 import { toast } from '../components/ui/use-toast';
@@ -61,6 +60,8 @@ interface AppContextType {
   
   // Product functions
   addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => void;
+  editProduct: (id: string, product: Partial<Omit<Product, 'id' | 'createdAt'>>) => void;
+  removeProduct: (id: string) => void;
   
   // Cart functions
   addToCart: (product: Product) => void;
@@ -162,6 +163,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toast({
       title: "محصول جدید",
       description: "محصول با موفقیت اضافه شد",
+    });
+  };
+  
+  const editProduct = (id: string, productData: Partial<Omit<Product, 'id' | 'createdAt'>>) => {
+    setProducts((prev) => 
+      prev.map((product) => 
+        product.id === id ? { ...product, ...productData } : product
+      )
+    );
+    
+    toast({
+      title: "ویرایش محصول",
+      description: "محصول با موفقیت ویرایش شد",
+    });
+  };
+  
+  const removeProduct = (id: string) => {
+    // First remove from any cart if it exists
+    setCart((prev) => prev.filter((item) => item.product.id !== id));
+    
+    // Then remove the product itself
+    setProducts((prev) => prev.filter((product) => product.id !== id));
+    
+    toast({
+      title: "حذف محصول",
+      description: "محصول با موفقیت حذف شد",
     });
   };
   
@@ -297,6 +324,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     login,
     logout,
     addProduct,
+    editProduct,
+    removeProduct,
     addToCart,
     removeFromCart,
     updateCartItemQuantity,

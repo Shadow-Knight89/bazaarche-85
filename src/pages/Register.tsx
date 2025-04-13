@@ -7,27 +7,37 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAppContext } from "../contexts/AppContext";
 import { toast } from "@/components/ui/use-toast";
 
-const Login = () => {
+const Register = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const navigate = useNavigate();
-  const { login } = useAppContext();
+  const { register } = useAppContext();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const success = login(username, password);
+    if (password !== confirmPassword) {
+      toast({
+        title: "خطا",
+        description: "رمز عبور و تکرار آن باید یکسان باشند",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const success = register(username, password);
     
     if (success) {
       toast({
-        title: "ورود موفق",
-        description: "با موفقیت وارد شدید",
+        title: "ثبت نام موفق",
+        description: "اکنون می‌توانید وارد حساب کاربری خود شوید",
       });
-      navigate("/");
+      navigate("/login");
     } else {
       toast({
         title: "خطا",
-        description: "نام کاربری یا رمز عبور اشتباه است",
+        description: "این نام کاربری قبلاً استفاده شده است",
         variant: "destructive",
       });
     }
@@ -37,9 +47,9 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">ورود به حساب کاربری</CardTitle>
+          <CardTitle className="text-center text-2xl">ثبت نام در سایت</CardTitle>
           <CardDescription className="text-center">
-            برای ورود به سیستم، اطلاعات خود را وارد کنید
+            برای ایجاد حساب کاربری، اطلاعات خود را وارد کنید
           </CardDescription>
         </CardHeader>
         
@@ -56,9 +66,6 @@ const Login = () => {
                 required
                 placeholder="نام کاربری خود را وارد کنید"
               />
-              <p className="text-xs text-muted-foreground">
-                برای ورود با حساب مدیریت از admin استفاده کنید
-              </p>
             </div>
             
             <div className="space-y-2">
@@ -73,18 +80,29 @@ const Login = () => {
                 required
                 placeholder="رمز عبور خود را وارد کنید"
               />
-              <p className="text-xs text-muted-foreground">
-                برای ورود با حساب مدیریت از admin123 استفاده کنید
-              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="text-sm font-medium">
+                تکرار رمز عبور
+              </label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                placeholder="رمز عبور خود را مجدداً وارد کنید"
+              />
             </div>
           </CardContent>
           
           <CardFooter className="flex-col space-y-4">
-            <Button type="submit" className="w-full">ورود</Button>
+            <Button type="submit" className="w-full">ثبت نام</Button>
             <div className="text-center text-sm">
-              حساب کاربری ندارید؟{" "}
-              <Link to="/register" className="text-primary hover:underline">
-                ثبت نام کنید
+              قبلاً ثبت نام کرده‌اید؟{" "}
+              <Link to="/login" className="text-primary hover:underline">
+                ورود به حساب کاربری
               </Link>
             </div>
           </CardFooter>
@@ -94,4 +112,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;

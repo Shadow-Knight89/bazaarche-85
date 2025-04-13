@@ -4,7 +4,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card"
 import { Product } from "../types";
 import { useAppContext } from "../contexts/AppContext";
 import { formatPrice } from "../utils/formatters";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Eye } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface ProductCardProps {
   product: Product;
@@ -17,29 +18,35 @@ const ProductCard = ({ product }: ProductCardProps) => {
   return (
     <Card className="product-card overflow-hidden">
       <CardHeader className="p-0 relative">
-        <div className="aspect-[4/3] overflow-hidden">
-          {product.images && product.images.length > 0 ? (
-            <img 
-              src={product.images[0]} 
-              alt={product.name}
-              className="w-full h-full object-cover transition-transform hover:scale-105" 
-            />
-          ) : (
-            <div className="w-full h-full bg-muted flex items-center justify-center">
-              بدون تصویر
-            </div>
-          )}
-        </div>
+        <Link to={`/products/${product.id}`}>
+          <div className="aspect-[4/3] overflow-hidden">
+            {product.images && product.images.length > 0 ? (
+              <img 
+                src={product.images[0]} 
+                alt={product.name}
+                className="w-full h-full object-cover transition-transform hover:scale-105" 
+              />
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                بدون تصویر
+              </div>
+            )}
+          </div>
+        </Link>
         
         {hasDiscount && (
-          <div className="discount-badge">
+          <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded">
             {Math.round((1 - product.discountedPrice / product.price) * 100)}%
           </div>
         )}
       </CardHeader>
       
       <CardContent className="p-4">
-        <CardTitle className="text-lg mb-2 line-clamp-1">{product.name}</CardTitle>
+        <Link to={`/products/${product.id}`}>
+          <CardTitle className="text-lg mb-2 line-clamp-1 hover:text-primary transition-colors">
+            {product.name}
+          </CardTitle>
+        </Link>
         
         <div className="flex flex-col gap-1">
           {hasDiscount && (
@@ -58,15 +65,26 @@ const ProductCard = ({ product }: ProductCardProps) => {
       </CardContent>
       
       <CardFooter className="p-4 pt-0">
-        <div className="flex justify-between items-center w-full">
+        <div className="flex justify-between items-center w-full gap-2">
           <Button 
             variant="outline" 
+            size="sm"
+            className="w-1/2"
+            asChild
+          >
+            <Link to={`/products/${product.id}`}>
+              <Eye className="ml-2 h-4 w-4" />
+              مشاهده
+            </Link>
+          </Button>
+          <Button 
+            variant="default" 
             size="sm" 
             onClick={() => addToCart(product)}
-            className="w-full"
+            className="w-1/2"
           >
             <ShoppingCart className="ml-2 h-4 w-4" />
-            افزودن به سبد
+            افزودن
           </Button>
         </div>
       </CardFooter>

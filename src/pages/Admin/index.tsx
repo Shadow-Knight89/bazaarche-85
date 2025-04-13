@@ -6,6 +6,8 @@ import Navbar from "../../components/Navbar";
 import { useAppContext } from "../../contexts/AppContext";
 import ProductManagement from "./ProductManagement";
 import GiftCodeManagement from "./GiftCodeManagement";
+import PurchaseHistory from "./PurchaseHistory";
+import CategoryManagement from "./CategoryManagement";
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState<string>("products");
@@ -28,15 +30,25 @@ const Admin = () => {
         <Tabs defaultValue="products" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="products">مدیریت محصولات</TabsTrigger>
+            <TabsTrigger value="categories">مدیریت دسته‌بندی‌ها</TabsTrigger>
             <TabsTrigger value="giftcodes">مدیریت کدهای تخفیف</TabsTrigger>
+            <TabsTrigger value="purchases">تاریخچه سفارشات</TabsTrigger>
           </TabsList>
           
           <TabsContent value="products">
             <ProductManagement />
           </TabsContent>
           
+          <TabsContent value="categories">
+            <CategoryManagement />
+          </TabsContent>
+          
           <TabsContent value="giftcodes">
             <GiftCodeManagement />
+          </TabsContent>
+          
+          <TabsContent value="purchases">
+            <PurchaseHistory />
           </TabsContent>
         </Tabs>
       </main>

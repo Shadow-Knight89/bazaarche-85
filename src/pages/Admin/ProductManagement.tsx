@@ -6,20 +6,24 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Plus, X } from "lucide-react";
 import { useAppContext } from "../../contexts/AppContext";
 import { formatPrice, formatDate } from "../../utils/formatters";
 import { Product } from "../../types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ProductManagement = () => {
-  const { products, addProduct, editProduct, removeProduct } = useAppContext();
+  const { products, categories, addProduct, editProduct, removeProduct } = useAppContext();
   
   // State for adding a product
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [discountedPrice, setDiscountedPrice] = useState("");
   const [description, setDescription] = useState("");
+  const [detailedDescription, setDetailedDescription] = useState("");
   const [images, setImages] = useState<string[]>(["/placeholder.svg"]);
+  const [category, setCategory] = useState("");
+  const [imageInput, setImageInput] = useState("");
   
   // State for editing a product
   const [isEditMode, setIsEditMode] = useState(false);
@@ -28,6 +32,40 @@ const ProductManagement = () => {
   const [editPrice, setEditPrice] = useState("");
   const [editDiscountedPrice, setEditDiscountedPrice] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editDetailedDescription, setEditDetailedDescription] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editImages, setEditImages] = useState<string[]>([]);
+  const [editImageInput, setEditImageInput] = useState("");
+  
+  // Add an image
+  const addImage = () => {
+    if (imageInput.trim() && !images.includes(imageInput)) {
+      setImages([...images, imageInput]);
+      setImageInput("");
+    }
+  };
+  
+  // Remove an image
+  const removeImage = (index: number) => {
+    const newImages = [...images];
+    newImages.splice(index, 1);
+    setImages(newImages);
+  };
+  
+  // Add an image in edit mode
+  const addEditImage = () => {
+    if (editImageInput.trim() && !editImages.includes(editImageInput)) {
+      setEditImages([...editImages, editImageInput]);
+      setEditImageInput("");
+    }
+  };
+  
+  // Remove an image in edit mode
+  const removeEditImage = (index: number) => {
+    const newImages = [...editImages];
+    newImages.splice(index, 1);
+    setEditImages(newImages);
+  };
   
   // Open edit dialog
   const openEditDialog = (product: Product) => {
@@ -36,6 +74,9 @@ const ProductManagement = () => {
     setEditPrice(product.price.toString());
     setEditDiscountedPrice(product.discountedPrice.toString());
     setEditDescription(product.description);
+    setEditDetailedDescription(product.detailedDescription || "");
+    setEditCategory(product.category || "");
+    setEditImages(product.images || ["/placeholder.svg"]);
     setIsEditMode(true);
   };
   
@@ -54,7 +95,9 @@ const ProductManagement = () => {
       price: parsedPrice,
       discountedPrice: parsedDiscountedPrice,
       description,
+      detailedDescription: detailedDescription || undefined,
       images,
+      category: category || undefined,
     };
     
     addProduct(newProduct);
@@ -64,7 +107,10 @@ const ProductManagement = () => {
     setPrice("");
     setDiscountedPrice("");
     setDescription("");
+    setDetailedDescription("");
     setImages(["/placeholder.svg"]);
+    setCategory("");
+    setImageInput("");
   };
   
   // Edit product submit handler
@@ -81,6 +127,9 @@ const ProductManagement = () => {
       price: parsedPrice,
       discountedPrice: parsedDiscountedPrice,
       description: editDescription,
+      detailedDescription: editDetailedDescription || undefined,
+      images: editImages,
+      category: editCategory || undefined,
     });
     
     setIsEditMode(false);
@@ -134,19 +183,67 @@ const ProductManagement = () => {
               />
             </div>
             
-            {/* In a real app, we would add an image upload feature here */}
             <div className="space-y-2">
-              <Label htmlFor="image">تصویر</Label>
-              <Input
-                id="image"
-                value="Placeholder image"
-                disabled
-                className="bg-muted cursor-not-allowed"
-              />
-              <p className="text-xs text-muted-foreground">
-                در این نسخه، تصویر پیش‌فرض استفاده می‌شود
-              </p>
+              <Label htmlFor="category">دسته‌بندی</Label>
+              <Select 
+                value={category} 
+                onValueChange={setCategory}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="دسته‌بندی را انتخاب کنید" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(cat => (
+                    <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>تصاویر محصول</Label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {images.map((image, index) => (
+                <div 
+                  key={index}
+                  className="relative w-24 h-24 border rounded overflow-hidden group"
+                >
+                  <img 
+                    src={image} 
+                    alt={`Product ${index}`} 
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removeImage(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+              
+              <div className="flex gap-2">
+                <Input
+                  placeholder="آدرس تصویر را وارد کنید"
+                  value={imageInput}
+                  onChange={(e) => setImageInput(e.target.value)}
+                  className="w-64"
+                />
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={addImage}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  افزودن
+                </Button>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              می‌توانید آدرس URL تصاویر را وارد کرده و اضافه کنید
+            </p>
           </div>
           
           <div className="space-y-2">
@@ -158,6 +255,17 @@ const ProductManagement = () => {
               placeholder="توضیحات محصول را وارد کنید"
               required
               rows={4}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="detailedDescription">توضیحات تکمیلی محصول (اختیاری)</Label>
+            <Textarea
+              id="detailedDescription"
+              value={detailedDescription}
+              onChange={(e) => setDetailedDescription(e.target.value)}
+              placeholder="جزئیات بیشتر محصول را وارد کنید (اختیاری)"
+              rows={6}
             />
           </div>
           
@@ -224,6 +332,11 @@ const ProductManagement = () => {
                       </div>
                     )}
                   </div>
+                  {product.category && (
+                    <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full inline-block mb-2">
+                      {product.category}
+                    </div>
+                  )}
                   <div className="text-xs text-muted-foreground">
                     {formatDate(product.createdAt)}
                   </div>
@@ -275,6 +388,65 @@ const ProductManagement = () => {
                   placeholder="اختیاری - در صورت عدم تکمیل، همان قیمت اصلی استفاده می‌شود"
                 />
               </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="editCategory">دسته‌بندی</Label>
+                <Select 
+                  value={editCategory} 
+                  onValueChange={setEditCategory}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="دسته‌بندی را انتخاب کنید" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => (
+                      <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>تصاویر محصول</Label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {editImages.map((image, index) => (
+                  <div 
+                    key={index}
+                    className="relative w-24 h-24 border rounded overflow-hidden group"
+                  >
+                    <img 
+                      src={image} 
+                      alt={`Product ${index}`} 
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeEditImage(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="آدرس تصویر را وارد کنید"
+                    value={editImageInput}
+                    onChange={(e) => setEditImageInput(e.target.value)}
+                    className="w-64"
+                  />
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    onClick={addEditImage}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    افزودن
+                  </Button>
+                </div>
+              </div>
             </div>
             
             <div className="space-y-2">
@@ -286,6 +458,17 @@ const ProductManagement = () => {
                 placeholder="توضیحات محصول را وارد کنید"
                 required
                 rows={4}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="editDetailedDescription">توضیحات تکمیلی محصول (اختیاری)</Label>
+              <Textarea
+                id="editDetailedDescription"
+                value={editDetailedDescription}
+                onChange={(e) => setEditDetailedDescription(e.target.value)}
+                placeholder="جزئیات بیشتر محصول را وارد کنید (اختیاری)"
+                rows={6}
               />
             </div>
             

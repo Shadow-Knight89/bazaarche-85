@@ -1,46 +1,83 @@
 
 import { useState } from "react";
-import Navbar from "../components/Navbar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useAppContext } from "../contexts/AppContext";
 import { formatPrice } from "../utils/formatters";
-import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Trash2, Plus, Minus, ShoppingCart, Tag } from "lucide-react";
+import { 
+  Card, 
+  CardContent, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Link, useNavigate } from "react-router-dom";
+import Navbar from "../components/Navbar";
 import { toast } from "@/components/ui/use-toast";
 
 const Cart = () => {
+  const [couponCode, setCouponCode] = useState("");
   const { 
     cart, 
     removeFromCart, 
     updateCartItemQuantity, 
     clearCart, 
-    applyGiftCode,
+    applyGiftCode, 
+    appliedGiftCode,
     calculateTotal,
-    appliedGiftCode 
+    user,
+    addPurchase
   } = useAppContext();
-  
-  const [giftCode, setGiftCode] = useState("");
+
+  const navigate = useNavigate();
+
   const { subtotal, discount, total } = calculateTotal();
   
-  const handleSubmitGiftCode = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!giftCode.trim()) return;
-    
-    const success = applyGiftCode(giftCode);
-    if (success) {
-      setGiftCode("");
-    }
-  };
-  
   const handleCheckout = () => {
+    if (!user) {
+      toast({
+        title: "خطا",
+        description: "برای نهایی کردن خرید ابتدا وارد حساب کاربری خود شوید",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+    
+    if (cart.length === 0) {
+      toast({
+        title: "خطا",
+        description: "سبد خرید شما خالی است",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    addPurchase();
     toast({
-      title: "سفارش ثبت شد",
+      title: "خرید موفق",
       description: "سفارش شما با موفقیت ثبت شد",
     });
-    clearCart();
+    navigate("/");
   };
-  
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) {
+      toast({
+        title: "خطا",
+        description: "لطفاً کد تخفیف را وارد کنید",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const success = applyGiftCode(couponCode);
+    if (success) {
+      setCouponCode("");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -50,135 +87,156 @@ const Cart = () => {
         
         {cart.length === 0 ? (
           <div className="text-center py-12">
-            <div className="flex justify-center mb-4">
-              <ShoppingBag className="w-16 h-16 text-muted" />
-            </div>
-            <p className="text-xl text-muted-foreground mb-6">
-              سبد خرید شما خالی است
+            <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
+            <h2 className="mt-4 text-xl font-semibold">سبد خرید شما خالی است</h2>
+            <p className="mt-2 text-muted-foreground max-w-md mx-auto">
+              برای افزودن محصولات به سبد خرید به صفحه محصولات بازگردید.
             </p>
-            <Link to="/">
-              <Button>مشاهده محصولات</Button>
-            </Link>
+            <Button asChild className="mt-6">
+              <Link to="/">بازگشت به فروشگاه</Link>
+            </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-2">
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold mb-4">محصولات</h2>
-                  
-                  <div className="space-y-4">
-                    {cart.map((item) => (
-                      <div key={item.product.id} className="flex items-center justify-between border-b pb-4">
-                        <div className="flex items-center space-x-4 space-x-reverse">
-                          <div className="h-16 w-16 overflow-hidden rounded">
-                            {item.product.images && item.product.images.length > 0 ? (
-                              <img 
-                                src={item.product.images[0]} 
-                                alt={item.product.name}
-                                className="w-full h-full object-cover" 
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-muted flex items-center justify-center text-xs">
-                                بدون تصویر
-                              </div>
-                            )}
-                          </div>
-                          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <div className="space-y-4">
+                {cart.map((item) => (
+                  <Card key={item.product.id} className="overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="flex flex-col sm:flex-row">
+                        <div className="sm:w-32 h-32">
+                          <img 
+                            src={item.product.images[0] || '/placeholder.svg'} 
+                            alt={item.product.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="p-4 flex-1 flex flex-col justify-between">
                           <div>
-                            <h3 className="font-medium">{item.product.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {formatPrice(item.product.discountedPrice)}
+                            <Link to={`/products/${item.product.id}`} className="font-medium hover:text-primary">
+                              {item.product.name}
+                            </Link>
+                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                              {item.product.description}
                             </p>
                           </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-4 space-x-reverse">
-                          <div className="flex items-center border rounded">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => updateCartItemQuantity(item.product.id, item.quantity - 1)}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            
-                            <span className="w-8 text-center">{item.quantity}</span>
-                            
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => updateCartItemQuantity(item.product.id, item.quantity + 1)}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
+                          <div className="flex justify-between items-end mt-4">
+                            <div className="flex items-center">
+                              <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-8 w-8"
+                                onClick={() => updateCartItemQuantity(item.product.id, item.quantity - 1)}
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="mx-3 min-w-8 text-center">{item.quantity}</span>
+                              <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-8 w-8"
+                                onClick={() => updateCartItemQuantity(item.product.id, item.quantity + 1)}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                              <div className="text-right">
+                                <div className="font-medium">
+                                  {formatPrice(item.product.discountedPrice * item.quantity)}
+                                </div>
+                                {item.product.price !== item.product.discountedPrice && (
+                                  <div className="text-sm line-through text-muted-foreground">
+                                    {formatPrice(item.product.price * item.quantity)}
+                                  </div>
+                                )}
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                className="text-red-500 hover:text-red-700"
+                                onClick={() => removeFromCart(item.product.id)}
+                              >
+                                <Trash2 className="h-5 w-5" />
+                              </Button>
+                            </div>
                           </div>
-                          
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive"
-                            onClick={() => removeFromCart(item.product.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              
+              <div className="mt-6 flex justify-end">
+                <Button 
+                  variant="outline" 
+                  onClick={clearCart}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  حذف همه
+                </Button>
               </div>
             </div>
             
-            <div className="md:col-span-1">
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold mb-4">خلاصه سفارش</h2>
-                
-                <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">مجموع</span>
-                    <span>{formatPrice(subtotal)}</span>
-                  </div>
-                  
-                  {discount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>تخفیف</span>
-                      <span>- {formatPrice(discount)}</span>
-                    </div>
-                  )}
-                  
-                  <div className="border-t pt-4 font-bold flex justify-between">
-                    <span>مبلغ قابل پرداخت</span>
-                    <span className="text-primary">{formatPrice(total)}</span>
-                  </div>
-                  
-                  <form onSubmit={handleSubmitGiftCode} className="pt-4">
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <Input
-                        placeholder="کد تخفیف"
-                        value={giftCode}
-                        onChange={(e) => setGiftCode(e.target.value)}
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>خلاصه سفارش</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Coupon Form */}
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium">کد تخفیف</div>
+                    <div className="flex space-x-2">
+                      <Input 
+                        placeholder="کد تخفیف را وارد کنید" 
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value)}
                       />
-                      <Button type="submit" variant="outline">اعمال</Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleApplyCoupon}
+                      >
+                        <Tag className="mr-2 h-4 w-4" />
+                        اعمال
+                      </Button>
                     </div>
                     
                     {appliedGiftCode && (
-                      <div className="mt-2 text-sm text-green-600">
+                      <div className="text-sm text-primary">
                         کد تخفیف {appliedGiftCode.code} اعمال شد
                       </div>
                     )}
-                  </form>
+                  </div>
                   
-                  <Button 
-                    className="w-full"
-                    onClick={handleCheckout}
-                  >
-                    پرداخت
+                  {/* Order Summary */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">مجموع:</span>
+                      <span>{formatPrice(subtotal)}</span>
+                    </div>
+                    
+                    {discount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">تخفیف:</span>
+                        <span className="text-red-500">- {formatPrice(discount)}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+                      <span>مبلغ قابل پرداخت:</span>
+                      <span className="text-primary">{formatPrice(total)}</span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button className="w-full" onClick={handleCheckout}>
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    نهایی کردن خرید
                   </Button>
-                </div>
-              </div>
+                </CardFooter>
+              </Card>
             </div>
           </div>
         )}

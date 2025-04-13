@@ -1,5 +1,6 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, CartItem, GiftCode, User } from '../types';
+import { Product, CartItem, GiftCode, User, Comment, Reply, Purchase, Category } from '../types';
 import { toast } from '../components/ui/use-toast';
 
 // Default products
@@ -10,7 +11,9 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 45000000,
     discountedPrice: 42000000,
     description: 'لپ تاپ گیمینگ با پردازنده قدرتمند و کارت گرافیک حرفه‌ای برای اجرای بازی‌های سنگین',
+    detailedDescription: 'این لپ تاپ گیمینگ مجهز به پردازنده نسل 12 اینتل و کارت گرافیک RTX 3080 است که برای اجرای بازی‌های سنگین و کارهای گرافیکی مناسب است. نمایشگر 15.6 اینچی با رفرش ریت 144 هرتز تجربه بازی فوق‌العاده‌ای را برای شما فراهم می‌کند.',
     images: ['/placeholder.svg'],
+    category: 'لپ تاپ',
     createdAt: new Date().toISOString(),
   },
   {
@@ -19,7 +22,9 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 12000000,
     discountedPrice: 12000000,
     description: 'گوشی هوشمند با دوربین حرفه‌ای و باتری با دوام',
+    detailedDescription: 'این گوشی هوشمند با دوربین سه‌گانه 48 مگاپیکسلی، باتری 5000 میلی‌آمپر ساعتی و نمایشگر Super AMOLED با رزولوشن Full HD+ تجربه کاربری فوق‌العاده‌ای را برای شما فراهم می‌کند.',
     images: ['/placeholder.svg'],
+    category: 'گوشی',
     createdAt: new Date().toISOString(),
   },
   {
@@ -28,7 +33,9 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 2500000,
     discountedPrice: 2000000,
     description: 'هدفون بی‌سیم با کیفیت صدای فوق‌العاده و حذف نویز محیط',
+    detailedDescription: 'این هدفون بی‌سیم با تکنولوژی حذف نویز فعال (ANC) صدای محیط را به میزان قابل توجهی کاهش می‌دهد و با کیفیت صدای بی‌نظیر و باتری با دوام تا 30 ساعت، تجربه گوش دادن به موسیقی را برای شما لذت‌بخش‌تر می‌کند.',
     images: ['/placeholder.svg'],
+    category: 'هدفون',
     createdAt: new Date().toISOString(),
   },
 ];
@@ -47,16 +54,50 @@ const DEFAULT_GIFT_CODES: GiftCode[] = [
   }
 ];
 
+// Default categories
+const DEFAULT_CATEGORIES: Category[] = [
+  {
+    id: '1',
+    name: 'لپ تاپ',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    name: 'گوشی',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '3',
+    name: 'هدفون',
+    createdAt: new Date().toISOString(),
+  },
+];
+
+// Default admin user
+const DEFAULT_USERS: User[] = [
+  {
+    id: 'admin',
+    username: 'admin',
+    password: 'admin123',
+    isAdmin: true,
+  }
+];
+
 interface AppContextType {
   products: Product[];
   cart: CartItem[];
   user: User | null;
   giftCodes: GiftCode[];
   appliedGiftCode: GiftCode | null;
+  categories: Category[];
+  comments: Comment[];
+  purchases: Purchase[];
   
   // Auth functions
   login: (username: string, password: string) => boolean;
   logout: () => void;
+  register: (username: string, password: string) => boolean;
+  changePassword: (currentPassword: string, newPassword: string) => boolean;
   
   // Product functions
   addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => void;
@@ -73,6 +114,19 @@ interface AppContextType {
   addGiftCode: (giftCode: Omit<GiftCode, 'id' | 'isUsed' | 'usedBy' | 'createdAt'>) => void;
   applyGiftCode: (code: string) => boolean;
   
+  // Category functions
+  addCategory: (name: string) => void;
+  removeCategory: (id: string) => void;
+  editCategory: (id: string, name: string) => void;
+  
+  // Comment functions
+  addComment: (productId: string, text: string) => void;
+  addReply: (commentId: string, text: string) => void;
+  getCommentsForProduct: (productId: string) => Comment[];
+  
+  // Purchase functions
+  addPurchase: () => void;
+  
   // Calculate total
   calculateTotal: () => { subtotal: number; discount: number; total: number };
 }
@@ -85,6 +139,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const CART_KEY = 'shop-cart';
   const USER_KEY = 'shop-user';
   const GIFT_CODES_KEY = 'shop-gift-codes';
+  const CATEGORIES_KEY = 'shop-categories';
+  const USERS_KEY = 'shop-users';
+  const COMMENTS_KEY = 'shop-comments';
+  const PURCHASES_KEY = 'shop-purchases';
   
   // State
   const [products, setProducts] = useState<Product[]>(() => {
@@ -105,6 +163,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [giftCodes, setGiftCodes] = useState<GiftCode[]>(() => {
     const storedGiftCodes = localStorage.getItem(GIFT_CODES_KEY);
     return storedGiftCodes ? JSON.parse(storedGiftCodes) : DEFAULT_GIFT_CODES;
+  });
+
+  const [categories, setCategories] = useState<Category[]>(() => {
+    const storedCategories = localStorage.getItem(CATEGORIES_KEY);
+    return storedCategories ? JSON.parse(storedCategories) : DEFAULT_CATEGORIES;
+  });
+
+  const [users, setUsers] = useState<User[]>(() => {
+    const storedUsers = localStorage.getItem(USERS_KEY);
+    return storedUsers ? JSON.parse(storedUsers) : DEFAULT_USERS;
+  });
+
+  const [comments, setComments] = useState<Comment[]>(() => {
+    const storedComments = localStorage.getItem(COMMENTS_KEY);
+    return storedComments ? JSON.parse(storedComments) : [];
+  });
+
+  const [purchases, setPurchases] = useState<Purchase[]>(() => {
+    const storedPurchases = localStorage.getItem(PURCHASES_KEY);
+    return storedPurchases ? JSON.parse(storedPurchases) : [];
   });
   
   const [appliedGiftCode, setAppliedGiftCode] = useState<GiftCode | null>(null);
@@ -129,17 +207,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(GIFT_CODES_KEY, JSON.stringify(giftCodes));
   }, [giftCodes]);
+
+  useEffect(() => {
+    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+  }, [categories]);
+
+  useEffect(() => {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    localStorage.setItem(COMMENTS_KEY, JSON.stringify(comments));
+  }, [comments]);
+
+  useEffect(() => {
+    localStorage.setItem(PURCHASES_KEY, JSON.stringify(purchases));
+  }, [purchases]);
   
   // Auth functions
   const login = (username: string, password: string): boolean => {
-    if (username === 'admin' && password === 'admin123') {
-      setUser({ id: 'admin', username: 'admin', isAdmin: true });
-      return true;
-    }
+    const foundUser = users.find(u => u.username === username && u.password === password);
     
-    // For normal users (simplified - in real app would use proper auth)
-    if (username && password) {
-      setUser({ id: username, username, isAdmin: false });
+    if (foundUser) {
+      // Create a copy without the password for the session
+      const { password: _, ...userWithoutPassword } = foundUser;
+      setUser({ ...userWithoutPassword, password: '' });
       return true;
     }
     
@@ -149,6 +241,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = () => {
     setUser(null);
     setAppliedGiftCode(null);
+  };
+
+  const register = (username: string, password: string): boolean => {
+    // Check if username already exists
+    if (users.some(u => u.username === username)) {
+      return false;
+    }
+
+    // Create new user
+    const newUser: User = {
+      id: Date.now().toString(),
+      username,
+      password,
+      isAdmin: false,
+    };
+
+    setUsers(prev => [...prev, newUser]);
+    return true;
+  };
+
+  const changePassword = (currentPassword: string, newPassword: string): boolean => {
+    if (!user) return false;
+
+    // Find the user with the current password
+    const userIndex = users.findIndex(u => u.id === user.id && u.password === currentPassword);
+    
+    if (userIndex === -1) {
+      return false;
+    }
+
+    // Update the user's password
+    const updatedUsers = [...users];
+    updatedUsers[userIndex] = {
+      ...updatedUsers[userIndex],
+      password: newPassword
+    };
+
+    setUsers(updatedUsers);
+    return true;
   };
   
   // Product functions
@@ -292,6 +423,136 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     return true;
   };
+
+  // Category functions
+  const addCategory = (name: string) => {
+    const newCategory: Category = {
+      id: Date.now().toString(),
+      name,
+      createdAt: new Date().toISOString(),
+    };
+    
+    setCategories(prev => [...prev, newCategory]);
+    toast({
+      title: "دسته‌بندی جدید",
+      description: "دسته‌بندی با موفقیت اضافه شد",
+    });
+  };
+
+  const removeCategory = (id: string) => {
+    // Check if any products are using this category
+    const productsUsingCategory = products.filter(p => p.category === categories.find(c => c.id === id)?.name);
+    
+    if (productsUsingCategory.length > 0) {
+      toast({
+        title: "خطا",
+        description: "این دسته‌بندی توسط محصولات استفاده می‌شود و نمی‌توان آن را حذف کرد",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setCategories(prev => prev.filter(c => c.id !== id));
+    toast({
+      title: "حذف دسته‌بندی",
+      description: "دسته‌بندی با موفقیت حذف شد",
+    });
+  };
+
+  const editCategory = (id: string, name: string) => {
+    const oldCategory = categories.find(c => c.id === id);
+    
+    setCategories(prev => prev.map(c => c.id === id ? { ...c, name } : c));
+    
+    // Update all products using this category
+    if (oldCategory) {
+      setProducts(prev => prev.map(p => p.category === oldCategory.name ? { ...p, category: name } : p));
+    }
+    
+    toast({
+      title: "ویرایش دسته‌بندی",
+      description: "دسته‌بندی با موفقیت ویرایش شد",
+    });
+  };
+
+  // Comment functions
+  const addComment = (productId: string, text: string) => {
+    if (!user) return;
+    
+    const newComment: Comment = {
+      id: Date.now().toString(),
+      productId,
+      userId: user.id,
+      username: user.username,
+      isAdmin: user.isAdmin,
+      text,
+      createdAt: new Date().toISOString(),
+      replies: [],
+    };
+    
+    setComments(prev => [...prev, newComment]);
+    toast({
+      title: "نظر جدید",
+      description: "نظر شما با موفقیت ثبت شد",
+    });
+  };
+
+  const addReply = (commentId: string, text: string) => {
+    if (!user) return;
+    
+    const newReply: Reply = {
+      id: Date.now().toString(),
+      commentId,
+      userId: user.id,
+      username: user.username,
+      isAdmin: user.isAdmin,
+      text,
+      createdAt: new Date().toISOString(),
+    };
+    
+    setComments(prev => prev.map(comment => {
+      if (comment.id === commentId) {
+        return {
+          ...comment,
+          replies: [...comment.replies, newReply],
+        };
+      }
+      return comment;
+    }));
+    
+    toast({
+      title: "پاسخ جدید",
+      description: "پاسخ شما با موفقیت ثبت شد",
+    });
+  };
+
+  const getCommentsForProduct = (productId: string): Comment[] => {
+    return comments.filter(comment => comment.productId === productId);
+  };
+
+  // Purchase functions
+  const addPurchase = () => {
+    if (!user || cart.length === 0) return;
+    
+    const { total } = calculateTotal();
+    
+    const newPurchase: Purchase = {
+      id: Date.now().toString(),
+      userId: user.id,
+      username: user.username,
+      items: [...cart],
+      total,
+      createdAt: new Date().toISOString(),
+    };
+    
+    setPurchases(prev => [...prev, newPurchase]);
+    clearCart();
+    
+    toast({
+      title: "خرید موفق",
+      description: "سفارش شما با موفقیت ثبت شد",
+    });
+  };
   
   // Calculate total
   const calculateTotal = () => {
@@ -321,8 +582,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     user,
     giftCodes,
     appliedGiftCode,
+    categories,
+    comments,
+    purchases,
     login,
     logout,
+    register,
+    changePassword,
     addProduct,
     editProduct,
     removeProduct,
@@ -332,6 +598,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     clearCart,
     addGiftCode,
     applyGiftCode,
+    addCategory,
+    removeCategory,
+    editCategory,
+    addComment,
+    addReply,
+    getCommentsForProduct,
+    addPurchase,
     calculateTotal,
   };
   

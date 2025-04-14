@@ -43,16 +43,16 @@ const Admin = () => {
   const showUsersTab = permissions.manageUsers === true;
   
   // Allow any admin to see the admin management tab
-  const showAdminsTab = true; // Changed from user.id === 'admin' to always show
+  const showAdminsTab = true;
   
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
       <main className="flex-1 container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">پنل مدیریت</h1>
+        <h1 className="text-3xl font-bold mb-8 text-right">پنل مدیریت</h1>
         
-        <Tabs defaultValue="products" value={activeTab} onValueChange={setActiveTab}>
+        <Tabs defaultValue="products" value={activeTab} onValueChange={setActiveTab} dir="rtl">
           <div className="overflow-x-auto">
             <TabsList className="mb-6">
               {showProductsTab && <TabsTrigger value="products">مدیریت محصولات</TabsTrigger>}

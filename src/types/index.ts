@@ -102,3 +102,7 @@ export interface Category {
   name: string;
   createdAt: string;
 }
+
+export interface UserCarts {
+  [userId: string]: CartItem[];
+}

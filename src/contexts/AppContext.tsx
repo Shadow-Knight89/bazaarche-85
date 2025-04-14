@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, GiftCode, User, Comment, Reply, Purchase, Category, SecurityQuestion, AdminPermissions, LoginAttempt } from '../types';
 import { toast } from '../components/ui/use-toast';
@@ -176,6 +175,8 @@ interface AppContextType {
   
   // Get product by custom ID
   getProductByCustomId: (customId: string) => Product | undefined;
+
+  userCarts: Record<string, CartItem[]>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -206,6 +207,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [user, setUser] = useState<User | null>(() => {
     const storedUser = localStorage.getItem(USER_KEY);
     return storedUser ? JSON.parse(storedUser) : null;
+  });
+  
+  // Store cart by user id to persist across logins
+  const [userCarts, setUserCarts] = useState<Record<string, CartItem[]>>(() => {
+    const storedUserCarts = localStorage.getItem('shop-user-carts');
+    return storedUserCarts ? JSON.parse(storedUserCarts) : {};
   });
   
   const [giftCodes, setGiftCodes] = useState<GiftCode[]>(() => {
@@ -281,6 +288,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(loginAttempts));
   }, [loginAttempts]);
   
+  useEffect(() => {
+    localStorage.setItem('shop-user-carts', JSON.stringify(userCarts));
+  }, [userCarts]);
+  
+  // When user changes, load their cart
+  useEffect(() => {
+    if (user) {
+      // If this user has a saved cart, load it
+      if (userCarts[user.id]) {
+        setCart(userCarts[user.id]);
+      }
+    }
+  }, [user, userCarts]);
+  
+  // When cart changes and there is a logged in user, save to their user-specific cart
+  useEffect(() => {
+    if (user) {
+      setUserCarts(prev => ({
+        ...prev,
+        [user.id]: cart
+      }));
+    }
+  }, [cart, user]);
+
   // Helper functions for login rate limiting
   const getClientIp = (): string => {
     // In a real app, this would come from the server
@@ -358,7 +389,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       // Create a copy without the password for the session
       const { password: _, ...userWithoutPassword } = foundUser;
+      
+      // Save current cart if there is one and user was logged in before
+      if (user && cart.length > 0) {
+        setUserCarts(prev => ({
+          ...prev,
+          [user.id]: cart
+        }));
+      }
+      
+      // Set new user
       setUser({ ...userWithoutPassword, password: '' });
+      
+      // Load user's cart if they have one
+      if (userCarts[foundUser.id]) {
+        setCart(userCarts[foundUser.id]);
+      } else {
+        // If no saved cart, start with empty cart
+        setCart([]);
+      }
       
       // Record successful login
       recordLoginAttempt(true);
@@ -372,6 +421,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   
   const logout = () => {
+    // Save current cart for the user before logging out
+    if (user) {
+      setUserCarts(prev => ({
+        ...prev,
+        [user.id]: cart
+      }));
+    }
+    
     setUser(null);
     setAppliedGiftCode(null);
     setCart([]);
@@ -559,7 +616,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   
   const resetCart = () => {
-    setCart([]);
+    // Don't clear cart on login/logout anymore
     setAppliedGiftCode(null);
   };
   
@@ -908,6 +965,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addAdmin,
     updateAdminPermissions,
     getProductByCustomId,
+    userCarts,
   };
   
   return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;

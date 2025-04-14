@@ -1,8 +1,9 @@
+
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { fetchProducts } from '@/utils/api'; // Adjust the import path as needed
-import { ProductCard } from '@/components/ProductCard'; // Adjust if necessary
+import ProductCard from '@/components/ProductCard'; // Changed from named import to default import
 import { Product } from '@/types'; // Ensure the type is defined
 import './index.css';
 

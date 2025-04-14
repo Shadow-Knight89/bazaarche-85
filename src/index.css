@@ -120,6 +120,8 @@
 }
 
 /* Image in product cards */
-.aspect-square img, .aspect-[4/3] img, .aspect-[3/2] img {
+.aspect-square img,
+.aspect-\\[4\\/3\\] img,
+.aspect-\\[3\\/2\\] img {
   @apply object-contain;
 }

@@ -1,4 +1,3 @@
-
 import { Button } from "./ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Product } from "../types";
@@ -14,7 +13,7 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart } = useAppContext();
   const hasDiscount = product.price !== product.discountedPrice;
-  
+
   return (
     <Card className="product-card overflow-hidden">
       <CardHeader className="p-0 relative">
@@ -33,21 +32,21 @@ const ProductCard = ({ product }: ProductCardProps) => {
             )}
           </div>
         </Link>
-        
+
         {hasDiscount && (
           <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded">
             {Math.round((1 - product.discountedPrice / product.price) * 100)}%
           </div>
         )}
       </CardHeader>
-      
+
       <CardContent className="p-4">
         <Link to={`/products/${product.id}`}>
           <CardTitle className="text-lg mb-2 line-clamp-1 hover:text-primary transition-colors">
             {product.name}
           </CardTitle>
         </Link>
-        
+
         <div className="flex flex-col gap-1">
           {hasDiscount && (
             <span className="line-through text-sm text-muted-foreground">
@@ -58,12 +57,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
             {formatPrice(product.discountedPrice)}
           </span>
         </div>
-        
+
         <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
           {product.description}
         </p>
       </CardContent>
-      
+
       <CardFooter className="p-4 pt-0">
         <div className="flex justify-between items-center w-full gap-2">
           <Button 

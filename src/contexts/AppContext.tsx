@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { 
   Product, 
@@ -94,6 +93,7 @@ interface AppProviderProps {
   children: ReactNode;
 }
 
+// IMPORTANT: Export AppProvider here
 export const AppProvider = ({ children }: AppProviderProps) => {
   // Store information
   const [storeName, setStoreName] = useState<string>("فروشگاه آنلاین");

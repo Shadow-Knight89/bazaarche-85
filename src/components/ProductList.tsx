@@ -1,7 +1,8 @@
+
 import React, { useEffect, useState } from 'react';
-import { fetchProducts, configureAxiosCSRF } from '../utils/api'; // Adjust the path as needed
-import ProductCard from './ProductCard'; // Ensure the path is correct
-import { Product } from '../types'; // Adjust the path based on your structure
+import { fetchProducts, configureAxiosCSRF } from '../utils/api'; // This import still works due to our re-exports
+import ProductCard from './ProductCard';
+import { Product } from '../types';
 
 const ProductList: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);

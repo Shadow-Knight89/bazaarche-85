@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from "../../components/Navbar";
 import { useAppContext } from "../../contexts/AppContext";
+import { PurchaseProvider } from "../../contexts/modules/PurchaseContext";
 import ProductManagement from "./ProductManagement";
 import GiftCodeManagement from "./GiftCodeManagement";
 import PurchaseHistory from "./PurchaseHistory";
@@ -44,6 +45,9 @@ const Admin = () => {
   
   // Allow any admin to see the admin management tab
   const showAdminsTab = true;
+
+  // Dummy function for purchase completion - not needed in admin panel
+  const onPurchaseComplete = () => {};
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -84,7 +88,9 @@ const Admin = () => {
           
           {showPurchasesTab && (
             <TabsContent value="purchases">
-              <PurchaseHistory />
+              <PurchaseProvider onPurchaseComplete={onPurchaseComplete}>
+                <PurchaseHistory />
+              </PurchaseProvider>
             </TabsContent>
           )}
           

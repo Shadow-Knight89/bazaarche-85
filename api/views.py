@@ -69,7 +69,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 class PurchaseViewSet(viewsets.ModelViewSet):
-    queryset = Purchase.objects.all().prefetch_related('items', 'user')
+    queryset = Purchase.objects.all().prefetch_related('items', 'items__product', 'user')
     serializer_class = PurchaseSerializer
     
     def get_permissions(self):

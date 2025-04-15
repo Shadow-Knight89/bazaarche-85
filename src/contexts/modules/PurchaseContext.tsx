@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Purchase, CartItem } from "../../types";
 import { useUserContext } from "./UserContext";
@@ -33,17 +32,33 @@ export const PurchaseProvider: React.FC<{
 
   // Function to load purchases from the server
   const loadPurchases = async () => {
+    if (!user || !user.isAdmin) return;
+    
     try {
       setLoading(true);
       const purchasesData = await fetchPurchases();
+      
       if (purchasesData && Array.isArray(purchasesData)) {
         // Transform purchases from API format if needed
         const formattedPurchases = purchasesData.map(purchase => ({
           ...purchase,
           id: purchase.id.toString(),
-          userId: purchase.userId || purchase.user_id || purchase.user?.id?.toString() || "",
+          userId: purchase.user?.id?.toString() || "",
           username: purchase.username || purchase.user?.username || "",
-          createdAt: purchase.createdAt || purchase.created_at || new Date().toISOString()
+          createdAt: purchase.createdAt || purchase.created_at || new Date().toISOString(),
+          items: purchase.items ? purchase.items.map((item: any) => ({
+            product: {
+              id: item.product,
+              name: item.product_name,
+              price: item.price,
+              discountedPrice: item.price,
+              // Other product fields might be needed
+              description: '',
+              category: null,
+              images: []
+            },
+            quantity: item.quantity
+          })) : []
         }));
         
         setPurchases(formattedPurchases);
@@ -60,13 +75,12 @@ export const PurchaseProvider: React.FC<{
     
     // Format the purchase data for the API
     const purchaseData = {
-      user: user.id,
+      total,
       items: items.map(item => ({
         product: item.product.id,
         quantity: item.quantity,
         price: item.product.discountedPrice
-      })),
-      total
+      }))
     };
     
     try {
@@ -96,26 +110,11 @@ export const PurchaseProvider: React.FC<{
       }
     } catch (error) {
       console.error('Error creating purchase:', error);
-      
-      // Even if the API call fails, we'll still add the purchase locally
-      // This ensures the user experience isn't disrupted
-      const fallbackPurchase: Purchase = {
-        id: Date.now().toString(),
-        userId: user.id,
-        username: user.username,
-        items: [...items],
-        total,
-        createdAt: new Date().toISOString()
-      };
-      
-      setPurchases(prev => [...prev, fallbackPurchase]);
-      
       toast({
-        title: "خرید موفق",
-        description: "سفارش شما با موفقیت ثبت شد",
+        title: "خطا",
+        description: "مشکلی در ثبت سفارش به وجود آمد",
+        variant: "destructive"
       });
-      
-      onPurchaseComplete();
     }
   };
 

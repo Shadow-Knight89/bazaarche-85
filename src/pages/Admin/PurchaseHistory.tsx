@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
-import { useAppContext } from "../../contexts/AppContext";
 import { formatPrice, formatDate } from "../../utils/formatters";
+import { usePurchaseContext } from "../../contexts/modules/PurchaseContext";
 import {
   Accordion,
   AccordionContent,
@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const PurchaseHistory = () => {
-  const { purchases, loadPurchases, loading } = useAppContext();
+  const { purchases, loadPurchases, loading } = usePurchaseContext();
   
   // Load purchases when the component mounts
   useEffect(() => {
@@ -142,13 +142,15 @@ const PurchaseHistory = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {purchase.items.map((item, index) => (
-                        <TableRow key={item.product.id}>
+                      {purchase.items && purchase.items.map((item, index) => (
+                        <TableRow key={`${purchase.id}-${index}`}>
                           <TableCell>{index + 1}</TableCell>
                           <TableCell className="font-medium">{item.product.name}</TableCell>
                           <TableCell>{formatPrice(item.product.discountedPrice)}</TableCell>
                           <TableCell className="text-center">{item.quantity}</TableCell>
-                          <TableCell className="text-right">{formatPrice(item.product.discountedPrice * item.quantity)}</TableCell>
+                          <TableCell className="text-right">
+                            {formatPrice(item.product.discountedPrice * item.quantity)}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

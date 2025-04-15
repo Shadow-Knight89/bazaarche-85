@@ -1,27 +1,13 @@
 import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import Navbar from "../components/Navbar";
-import ProductCard from "../components/ProductCard";
-import { Product } from "../types";
-import { useAppContext } from "../contexts/AppContext";
-import Welcome from "../components/Welcome";
-import { fetchProducts, configureAxiosCSRF } from "../utils/api"; // Import your API functions
-
-javascript
-
-Copy
-import { useEffect, useState } from "react";
-import Navbar from "../components/Navbar"; // Import your Navbar
-import ProductCard from "../components/ProductCard"; // Import your ProductCard
 import { Input } from "@/components/ui/input"; // Import Input component
 import { Button } from "@/components/ui/button"; // Import Button component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
-import { fetchProducts, configureAxiosCSRF } from "../utils/api"; // Import your API functions
+import Navbar from "../components/Navbar"; // Import your Navbar
+import ProductCard from "../components/ProductCard"; // Import your ProductCard
+import { Product } from "../types"; // Import Product type
 import { useAppContext } from "../contexts/AppContext"; // Import context
 import Welcome from "../components/Welcome"; // Import Welcome component
-import { Product } from "../types"; // Import Product type
+import { fetchProducts, configureAxiosCSRF } from "../utils/api"; // Import your API functions
 
 const Index = () => {
   const { categories } = useAppContext(); // Get categories from context

@@ -42,6 +42,8 @@ const GiftCodeManagement = () => {
       discountType,
       discountValue: parsedDiscountValue,
       isGlobal,
+      isUsed: false,  // Add the missing properties
+      usedBy: null    // Add the missing properties
     };
     
     addGiftCode(newGiftCode);

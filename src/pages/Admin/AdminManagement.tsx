@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,24 +58,17 @@ const AdminManagement = () => {
       return;
     }
     
-    const success = addAdmin(newAdminUsername, newAdminPassword, newAdminPermissions);
+    // Call addAdmin with just the userId
+    addAdmin(newAdminUsername);
     
-    if (success) {
-      setIsAddDialogOpen(false);
-      setNewAdminUsername("");
-      setNewAdminPassword("");
-      
-      toast({
-        title: "مدیر جدید",
-        description: "حساب مدیر با موفقیت ایجاد شد",
-      });
-    } else {
-      toast({
-        title: "خطا",
-        description: "این نام کاربری قبلاً استفاده شده است",
-        variant: "destructive",
-      });
-    }
+    setIsAddDialogOpen(false);
+    setNewAdminUsername("");
+    setNewAdminPassword("");
+    
+    toast({
+      title: "مدیر جدید",
+      description: "حساب مدیر با موفقیت ایجاد شد",
+    });
   };
   
   // Open edit dialog

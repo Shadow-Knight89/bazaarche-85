@@ -8,7 +8,7 @@ import {
   updateCategory, 
   deleteCategory 
 } from "../../utils/api";
-import { useProductContext } from "./ProductContext";
+import { useProductContext } from "./product"; // Updated import path
 
 interface CategoryContextType {
   categories: Category[];

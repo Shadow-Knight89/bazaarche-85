@@ -1,10 +1,9 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppContext } from "../contexts/AppContext";
 import { formatDate } from "../utils/formatters";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
-import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Comment as CommentType } from "../types";
@@ -20,8 +19,23 @@ const CommentSection = ({ productId }: CommentSectionProps) => {
   const [commentText, setCommentText] = useState("");
   const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [comments, setComments] = useState<CommentType[]>([]);
   
-  const comments = getCommentsForProduct(productId);
+  // Fetch comments when component mounts or productId changes
+  useEffect(() => {
+    // Get initial comments
+    const initialComments = getCommentsForProduct(productId);
+    setComments(initialComments);
+    
+    // Set up an interval to periodically refresh comments
+    const intervalId = setInterval(() => {
+      const refreshedComments = getCommentsForProduct(productId);
+      setComments(refreshedComments);
+    }, 5000); // Refresh every 5 seconds
+    
+    // Cleanup on unmount
+    return () => clearInterval(intervalId);
+  }, [productId, getCommentsForProduct]);
 
   const handleAddComment = () => {
     if (!user) {
@@ -44,6 +58,12 @@ const CommentSection = ({ productId }: CommentSectionProps) => {
     
     addComment(productId, commentText);
     setCommentText("");
+    
+    // Refresh comments after adding a new one
+    setTimeout(() => {
+      const refreshedComments = getCommentsForProduct(productId);
+      setComments(refreshedComments);
+    }, 500);
   };
   
   const handleAddReply = (commentId: string) => {
@@ -70,6 +90,12 @@ const CommentSection = ({ productId }: CommentSectionProps) => {
     addReply(commentId, reply);
     setReplyText(prev => ({ ...prev, [commentId]: "" }));
     setReplyingTo(null);
+    
+    // Refresh comments after adding a reply
+    setTimeout(() => {
+      const refreshedComments = getCommentsForProduct(productId);
+      setComments(refreshedComments);
+    }, 500);
   };
   
   const toggleReplyForm = (commentId: string) => {

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { 
   Product, 
@@ -480,7 +479,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     });
     
     toast({
-      title: "سبد خرید",
+      title: "سبد خری��",
       description: `${product.name} به سبد خرید اضافه شد`,
     });
   };
@@ -941,33 +940,41 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     );
   };
   
-  const getCommentsForProduct = async (productId: string) => {
-    try {
-      const commentsData = await fetchComments(productId);
-      
-      if (commentsData) {
-        // Transform API response to our Comment format
-        const formattedComments: Comment[] = commentsData.map((comment: any) => ({
-          id: comment.id.toString(),
-          productId: comment.product.toString(),
-          userId: comment.user.id.toString(),
-          username: comment.user.username,
-          isAdmin: false, // Could be enhanced with admin check
-          text: comment.text,
-          createdAt: comment.createdAt,
-          replies: [], // API doesn't support replies yet
-        }));
-        
-        // Update local state
-        setComments(formattedComments);
-        return formattedComments;
-      }
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-    }
+  const getCommentsForProduct = (productId: string) => {
+    // Filter from local state first
+    const productComments = comments.filter(comment => comment.productId === productId);
     
-    // Return current comments if API call fails
-    return comments.filter(comment => comment.productId === productId);
+    // Load comments from API in the background
+    fetchComments(productId)
+      .then(commentsData => {
+        if (commentsData && Array.isArray(commentsData)) {
+          // Transform API response to our Comment format
+          const formattedComments: Comment[] = commentsData.map((comment: any) => ({
+            id: comment.id.toString(),
+            productId: comment.product.toString(),
+            userId: comment.user?.id?.toString() || "unknown",
+            username: comment.user?.username || "unknown",
+            isAdmin: false,
+            text: comment.text,
+            createdAt: comment.createdAt || new Date().toISOString(),
+            replies: [], // API doesn't support replies yet
+          }));
+          
+          // Update local state
+          setComments(prevComments => {
+            // Merge with existing comments, avoiding duplicates
+            const existingIds = new Set(prevComments.map(c => c.id));
+            const newComments = formattedComments.filter(c => !existingIds.has(c.id));
+            return [...prevComments, ...newComments];
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching comments:', error);
+      });
+    
+    // Return the currently known comments immediately
+    return productComments;
   };
 
   // Purchase functions

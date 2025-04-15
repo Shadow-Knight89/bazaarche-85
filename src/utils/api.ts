@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { toast } from '@/components/ui/use-toast';
 
@@ -141,7 +140,7 @@ export const fetchComments = async (productId: string) => {
     return response.data;
   } catch (error) {
     console.error('Error fetching comments:', error);
-    throw error;
+    return []; // Return empty array instead of throwing error
   }
 };
 

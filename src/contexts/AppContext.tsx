@@ -1,3 +1,15 @@
+
+import React, { createContext, useContext, ReactNode } from "react";
+
+// Add the useContext hook export
+export const useAppContext = () => {
+  const context = useContext(AppContext);
+  if (context === undefined) {
+    throw new Error("useAppContext must be used within an AppProvider");
+  }
+  return context;
+};
+
 const addProduct = (product: Omit<Product, 'id' | 'createdAt'>) => {
   // Check if customId already exists
   if (product.customId && products.some(p => p.customId === product.customId)) {

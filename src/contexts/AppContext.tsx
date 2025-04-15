@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { 
   Product, 
@@ -11,6 +12,22 @@ import {
   LoginAttempt
 } from "../types";
 import { toast } from "@/components/ui/use-toast";
+import { 
+  fetchProducts, 
+  fetchCategories, 
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  loginUser,
+  logoutUser,
+  registerUser,
+  uploadImage,
+  postComment,
+  fetchComments
+} from "../utils/api";
 
 // Define the context type with all required properties and functions
 interface AppContextType {
@@ -49,8 +66,8 @@ interface AppContextType {
   // User management
   user: User | null;
   users: User[];
-  login: (username: string, password: string) => boolean;
-  register: (username: string, password: string, securityQuestion: SecurityQuestion) => boolean;
+  login: (username: string, password: string) => Promise<boolean>;
+  register: (username: string, password: string, securityQuestion: SecurityQuestion) => Promise<boolean>;
   logout: () => void;
   changePassword: (currentPassword: string, newPassword: string) => boolean;
   resetPassword: (username: string, newPassword: string) => void;
@@ -93,7 +110,7 @@ interface AppProviderProps {
   children: ReactNode;
 }
 
-// IMPORTANT: Export AppProvider here
+// Export the AppProvider here
 export const AppProvider = ({ children }: AppProviderProps) => {
   // Store information
   const [storeName, setStoreName] = useState<string>("فروشگاه آنلاین");
@@ -220,8 +237,31 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   // Purchases state
   const [purchases, setPurchases] = useState<Purchase[]>([]);
 
+  // Load data from API on component mount
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        // Fetch products from API
+        const productsData = await fetchProducts();
+        if (productsData && Array.isArray(productsData)) {
+          setProducts(productsData);
+        }
+        
+        // Fetch categories from API
+        const categoriesData = await fetchCategories();
+        if (categoriesData && Array.isArray(categoriesData)) {
+          setCategories(categoriesData);
+        }
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      }
+    };
+    
+    loadInitialData();
+  }, []);
+
   // Product functions
-  const addProduct = (product: Omit<Product, 'id' | 'createdAt'>) => {
+  const addProduct = async (product: Omit<Product, 'id' | 'createdAt'>) => {
     // Check if customId already exists
     if (product.customId && products.some(p => p.customId === product.customId)) {
       toast({
@@ -232,21 +272,25 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       return;
     }
 
-    const newProduct: Product = {
-      ...product,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-    };
-
-    console.log("New product added:", newProduct);
-    setProducts((prev) => [...prev, newProduct]);
-    toast({
-      title: "محصول جدید",
-      description: "محصول با موفقیت اضافه شد",
-    });
+    try {
+      // Send to API
+      const response = await createProduct(product);
+      
+      if (response) {
+        // Add to local state
+        setProducts((prev) => [...prev, response]);
+        
+        toast({
+          title: "محصول جدید",
+          description: "محصول با موفقیت اضافه شد",
+        });
+      }
+    } catch (error) {
+      console.error('Error adding product:', error);
+    }
   };
 
-  const editProduct = (id: string, product: Partial<Product>) => {
+  const editProduct = async (id: string, product: Partial<Product>) => {
     // Check if customId is being changed and ensure it's unique
     if (product.customId) {
       const existingWithCustomId = products.find(
@@ -263,31 +307,54 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       }
     }
     
-    setProducts(prevProducts => 
-      prevProducts.map(p => 
-        p.id === id ? { ...p, ...product } : p
-      )
-    );
-    
-    toast({
-      title: "ویرایش محصول",
-      description: "محصول با موفقیت ویرایش شد",
-    });
+    try {
+      // Get current product
+      const currentProduct = products.find(p => p.id === id);
+      if (!currentProduct) return;
+      
+      // Merge current with updates
+      const updatedProduct = { ...currentProduct, ...product };
+      
+      // Send to API
+      await updateProduct(id, updatedProduct);
+      
+      // Update local state
+      setProducts(prevProducts => 
+        prevProducts.map(p => 
+          p.id === id ? { ...p, ...product } : p
+        )
+      );
+      
+      toast({
+        title: "ویرایش محصول",
+        description: "محصول با موفقیت ویرایش شد",
+      });
+    } catch (error) {
+      console.error('Error updating product:', error);
+    }
   };
   
-  const removeProduct = (id: string) => {
-    setProducts(prevProducts => prevProducts.filter(p => p.id !== id));
-    
-    // Remove associated comments
-    setComments(prevComments => prevComments.filter(c => c.productId !== id));
-    
-    // Remove from cart if present
-    setCart(prevCart => prevCart.filter(item => item.product.id !== id));
-    
-    toast({
-      title: "حذف محصول",
-      description: "محصول با موفقیت حذف شد",
-    });
+  const removeProduct = async (id: string) => {
+    try {
+      // Send delete request to API
+      await deleteProduct(id);
+      
+      // Update local state
+      setProducts(prevProducts => prevProducts.filter(p => p.id !== id));
+      
+      // Remove associated comments
+      setComments(prevComments => prevComments.filter(c => c.productId !== id));
+      
+      // Remove from cart if present
+      setCart(prevCart => prevCart.filter(item => item.product.id !== id));
+      
+      toast({
+        title: "حذف محصول",
+        description: "محصول با موفقیت حذف شد",
+      });
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    }
   };
   
   const getProductByCustomId = (customId: string) => {
@@ -295,7 +362,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   };
 
   // Category functions
-  const addCategory = (name: string) => {
+  const addCategory = async (name: string) => {
     // Check if category with the same name already exists
     if (categories.some(c => c.name === name)) {
       toast({
@@ -306,21 +373,25 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       return;
     }
     
-    const newCategory: Category = {
-      id: Date.now().toString(),
-      name,
-      createdAt: new Date().toISOString()
-    };
-    
-    setCategories(prev => [...prev, newCategory]);
-    
-    toast({
-      title: "دسته‌بندی جدید",
-      description: "دسته‌بندی با موفقیت اضافه شد",
-    });
+    try {
+      // Send to API
+      const response = await createCategory({ name });
+      
+      if (response) {
+        // Add to local state
+        setCategories(prev => [...prev, response]);
+        
+        toast({
+          title: "دسته‌بندی جدید",
+          description: "دسته‌بندی با موفقیت اضافه شد",
+        });
+      }
+    } catch (error) {
+      console.error('Error adding category:', error);
+    }
   };
   
-  const removeCategory = (id: string) => {
+  const removeCategory = async (id: string) => {
     const categoryToRemove = categories.find(c => c.id === id);
     
     if (!categoryToRemove) return;
@@ -336,15 +407,23 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       return;
     }
     
-    setCategories(prev => prev.filter(c => c.id !== id));
-    
-    toast({
-      title: "حذف دسته‌بندی",
-      description: "دسته‌بندی با موفقیت حذف شد",
-    });
+    try {
+      // Send delete request to API
+      await deleteCategory(id);
+      
+      // Update local state
+      setCategories(prev => prev.filter(c => c.id !== id));
+      
+      toast({
+        title: "حذف دسته‌بندی",
+        description: "دسته‌بندی با موفقیت حذف شد",
+      });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+    }
   };
   
-  const editCategory = (id: string, name: string) => {
+  const editCategory = async (id: string, name: string) => {
     // Check if another category with the same name already exists
     if (categories.some(c => c.name === name && c.id !== id)) {
       toast({
@@ -361,20 +440,27 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     
     const oldName = categoryToEdit.name;
     
-    // Update category
-    setCategories(prev => 
-      prev.map(c => c.id === id ? { ...c, name } : c)
-    );
-    
-    // Update products with this category
-    setProducts(prev => 
-      prev.map(p => p.category === oldName ? { ...p, category: name } : p)
-    );
-    
-    toast({
-      title: "ویرایش دسته‌بندی",
-      description: "دسته‌بندی با موفقیت ویرایش شد",
-    });
+    try {
+      // Send update to API
+      await updateCategory(id, { name });
+      
+      // Update category
+      setCategories(prev => 
+        prev.map(c => c.id === id ? { ...c, name } : c)
+      );
+      
+      // Update products with this category
+      setProducts(prev => 
+        prev.map(p => p.category === oldName ? { ...p, category: name } : p)
+      );
+      
+      toast({
+        title: "ویرایش دسته‌بندی",
+        description: "دسته‌بندی با موفقیت ویرایش شد",
+      });
+    } catch (error) {
+      console.error('Error updating category:', error);
+    }
   };
 
   // Cart functions
@@ -511,92 +597,106 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   };
 
   // User functions
-  const login = (username: string, password: string) => {
-    const foundUser = users.find(
-      u => u.username === username && u.password === password
-    );
-    
-    if (foundUser) {
-      // Check if user is banned
-      if (foundUser.isBanned) {
-        toast({
-          title: "خطا",
-          description: "حساب کاربری شما مسدود شده است",
-          variant: "destructive",
-        });
-        return false;
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const userData = await loginUser(username, password);
+      
+      if (userData) {
+        // Convert Django user to our app's user format
+        const loggedInUser: User = {
+          id: userData.id.toString(),
+          username: userData.username,
+          password: '', // We don't store the actual password
+          isAdmin: username === 'admin', // Simplified admin check - can be enhanced
+          canComment: true
+        };
+        
+        setUser(loggedInUser);
+        
+        // Reset failed login attempts
+        setLoginAttempts(prev => 
+          prev.map(attempt => 
+            attempt.ip === "current-ip" ? { ...attempt, count: 0 } : attempt
+          )
+        );
+        
+        return true;
       }
       
-      setUser(foundUser);
+      return false;
+    } catch (error) {
+      // Increment failed login attempts
+      const currentAttempt = loginAttempts.find(a => a.ip === "current-ip");
       
-      // Reset failed login attempts
-      setLoginAttempts(prev => 
-        prev.map(attempt => 
-          attempt.ip === "current-ip" ? { ...attempt, count: 0 } : attempt
-        )
-      );
+      if (currentAttempt) {
+        setLoginAttempts(prev => 
+          prev.map(attempt => 
+            attempt.ip === "current-ip" 
+              ? { 
+                  ...attempt, 
+                  count: attempt.count + 1, 
+                  timestamp: Date.now() 
+                } 
+              : attempt
+          )
+        );
+      } else {
+        setLoginAttempts(prev => [
+          ...prev,
+          { ip: "current-ip", count: 1, timestamp: Date.now() }
+        ]);
+      }
       
-      return true;
-    }
-    
-    // Increment failed login attempts
-    const currentAttempt = loginAttempts.find(a => a.ip === "current-ip");
-    
-    if (currentAttempt) {
-      setLoginAttempts(prev => 
-        prev.map(attempt => 
-          attempt.ip === "current-ip" 
-            ? { 
-                ...attempt, 
-                count: attempt.count + 1, 
-                timestamp: Date.now() 
-              } 
-            : attempt
-        )
-      );
-    } else {
-      setLoginAttempts(prev => [
-        ...prev,
-        { ip: "current-ip", count: 1, timestamp: Date.now() }
-      ]);
-    }
-    
-    return false;
-  };
-  
-  const register = (username: string, password: string, securityQuestion: SecurityQuestion) => {
-    // Check if username already exists
-    if (users.some(u => u.username === username)) {
-      toast({
-        title: "خطا",
-        description: "این نام کاربری قبلاً استفاده شده است",
-        variant: "destructive",
-      });
       return false;
     }
-    
-    const newUser: User = {
-      id: Date.now().toString(),
-      username,
-      password,
-      isAdmin: false,
-      securityQuestion,
-      canComment: true
-    };
-    
-    setUsers(prev => [...prev, newUser]);
-    
-    toast({
-      title: "ثبت نام موفق",
-      description: "حساب کاربری با موفقیت ایجاد شد",
-    });
-    
-    return true;
   };
   
-  const logout = () => {
-    setUser(null);
-    resetCart();
+  const register = async (username: string, password: string, securityQuestion: SecurityQuestion): Promise<boolean> => {
+    try {
+      // Register with Django
+      const userData = await registerUser({
+        username,
+        password,
+        email: '', // Can be enhanced to collect email
+      });
+      
+      if (userData) {
+        // Add to local users with security question
+        const newUser: User = {
+          id: userData.id.toString(),
+          username: userData.username,
+          password: '', // We don't store the actual password
+          isAdmin: false,
+          securityQuestion,
+          canComment: true
+        };
+        
+        setUsers(prev => [...prev, newUser]);
+        
+        toast({
+          title: "ثبت نام موفق",
+          description: "حساب کاربری با موفقیت ایجاد شد",
+        });
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      return false;
+    }
+  };
+  
+  const logout = async () => {
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      // Always clear local state regardless of API response
+      setUser(null);
+      resetCart();
+    }
   };
   
   const changePassword = (currentPassword: string, newPassword: string) => {
@@ -780,23 +880,41 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   };
 
   // Comment functions
-  const addComment = (productId: string, text: string) => {
+  const addComment = async (productId: string, text: string) => {
     if (!user) return;
     
-    const newComment: Comment = {
-      id: Date.now().toString(),
-      productId,
-      userId: user.id,
-      username: user.username,
-      isAdmin: user.isAdmin,
-      adminPrefix: user.isAdmin && user.adminPermissions?.customPrefix,
-      adminPrefixColor: user.isAdmin && user.adminPermissions?.customPrefixColor,
-      text,
-      createdAt: new Date().toISOString(),
-      replies: []
-    };
-    
-    setComments(prev => [...prev, newComment]);
+    try {
+      const commentData = {
+        product: productId,
+        text
+      };
+      
+      const response = await postComment(commentData);
+      
+      if (response) {
+        const newComment: Comment = {
+          id: response.id,
+          productId,
+          userId: user.id,
+          username: user.username,
+          isAdmin: user.isAdmin,
+          adminPrefix: user.isAdmin && user.adminPermissions?.customPrefix,
+          adminPrefixColor: user.isAdmin && user.adminPermissions?.customPrefixColor,
+          text,
+          createdAt: response.createdAt || new Date().toISOString(),
+          replies: []
+        };
+        
+        setComments(prev => [...prev, newComment]);
+        
+        toast({
+          title: "نظر جدید",
+          description: "نظر شما با موفقیت ثبت شد",
+        });
+      }
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
   };
   
   const addReply = (commentId: string, text: string) => {
@@ -823,7 +941,32 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     );
   };
   
-  const getCommentsForProduct = (productId: string) => {
+  const getCommentsForProduct = async (productId: string) => {
+    try {
+      const commentsData = await fetchComments(productId);
+      
+      if (commentsData) {
+        // Transform API response to our Comment format
+        const formattedComments: Comment[] = commentsData.map((comment: any) => ({
+          id: comment.id.toString(),
+          productId: comment.product.toString(),
+          userId: comment.user.id.toString(),
+          username: comment.user.username,
+          isAdmin: false, // Could be enhanced with admin check
+          text: comment.text,
+          createdAt: comment.createdAt,
+          replies: [], // API doesn't support replies yet
+        }));
+        
+        // Update local state
+        setComments(formattedComments);
+        return formattedComments;
+      }
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    }
+    
+    // Return current comments if API call fails
     return comments.filter(comment => comment.productId === productId);
   };
 
@@ -844,6 +987,11 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     
     setPurchases(prev => [...prev, newPurchase]);
     clearCart();
+    
+    toast({
+      title: "خرید موفق",
+      description: "سفارش شما با موفقیت ثبت شد",
+    });
   };
   
   // Context value

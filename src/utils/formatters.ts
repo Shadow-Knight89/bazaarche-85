@@ -1,4 +1,3 @@
-
 export const formatPrice = (price: number): string => {
   return new Intl.NumberFormat('fa-IR').format(price) + ' تومان';
 };
@@ -6,6 +5,7 @@ export const formatPrice = (price: number): string => {
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   if (isNaN(date.getTime())) {
+    console.error("Invalid date value:", dateString); // Log the invalid value
     return "Invalid date"; // Handle invalid date
   }
 

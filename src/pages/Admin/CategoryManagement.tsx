@@ -88,8 +88,7 @@ const CategoryManagement = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {categories.map((category: Category) => {
-              // Log the date value for debugging
-              console.log("Category Date:", category.createdAt);
+              console.log("Category Date:", category.createdAt); // Log the date value for debugging
               return (
                 <Card key={category.id}>
                   <CardContent className="p-4">
@@ -143,7 +142,6 @@ const CategoryManagement = () => {
                 required
               />
             </div>
-            
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setIsEditMode(false)}>
                 لغو

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState } from "react";
 import { User, SecurityQuestion, LoginAttempt } from "../../types";
 import { toast } from "@/components/ui/use-toast";
@@ -72,18 +71,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userData = await apiLoginUser(username, password);
       
       if (userData) {
-        // Convert Django user to our app's user format
         const loggedInUser: User = {
           id: userData.id.toString(),
           username: userData.username,
-          password: '', // We don't store the actual password
-          isAdmin: username === 'admin', // Simplified admin check - can be enhanced
+          password: '',
+          isAdmin: username === 'admin',
           canComment: true
         };
         
         setUser(loggedInUser);
         
-        // Reset failed login attempts
         setLoginAttempts(prev => 
           prev.map(attempt => 
             attempt.ip === "current-ip" ? { ...attempt, count: 0 } : attempt
@@ -95,7 +92,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       return false;
     } catch (error) {
-      // Increment failed login attempts
       const currentAttempt = loginAttempts.find(a => a.ip === "current-ip");
       
       if (currentAttempt) {
@@ -123,19 +119,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const register = async (username: string, password: string, securityQuestion: SecurityQuestion): Promise<boolean> => {
     try {
-      // Register with Django
       const userData = await apiRegisterUser({
         username,
         password,
-        email: '', // Can be enhanced to collect email
       });
       
       if (userData) {
-        // Add to local users with security question
         const newUser: User = {
           id: userData.id.toString(),
           username: userData.username,
-          password: '', // We don't store the actual password
+          password: '',
           isAdmin: false,
           securityQuestion,
           canComment: true
@@ -153,6 +146,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       return false;
     } catch (error) {
+      console.error("Registration error:", error);
       return false;
     }
   };
@@ -163,7 +157,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Error during logout:', error);
     } finally {
-      // Always clear local state regardless of API response
       setUser(null);
     }
   };
@@ -171,19 +164,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const changePassword = (currentPassword: string, newPassword: string) => {
     if (!user) return false;
     
-    // Verify current password
     if (user.password !== currentPassword) {
       return false;
     }
     
-    // Update password
     setUsers(prev => 
       prev.map(u => 
         u.id === user.id ? { ...u, password: newPassword } : u
       )
     );
     
-    // Update current user
     setUser({ ...user, password: newPassword });
     
     return true;
@@ -218,7 +208,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     const timeElapsed = Date.now() - attempt.timestamp;
-    const lockoutTime = 5 * 60 * 1000; // 5 minutes in milliseconds
+    const lockoutTime = 5 * 60 * 1000;
     
     if (timeElapsed < lockoutTime) {
       return { limited: true, remainingTime: lockoutTime - timeElapsed };
@@ -228,7 +218,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   
   const deleteUser = (userId: string) => {
-    // Don't allow deleting current user
     if (user && user.id === userId) {
       toast({
         title: "خطا",
@@ -331,7 +320,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       description: "دسترسی‌های مدیر با موفقیت بروزرسانی شد",
     });
     
-    // Update current user if permissions were changed for them
     if (user && user.id === userId) {
       setUser(prev => {
         if (!prev || !prev.adminPermissions) return prev;

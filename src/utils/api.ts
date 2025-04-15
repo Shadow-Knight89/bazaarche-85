@@ -16,6 +16,13 @@ const handleApiError = (error: any) => {
   if (error.response) {
     errorMessage = error.response.data?.detail || 
                   (typeof error.response.data === 'string' ? error.response.data : 'Server error');
+    
+    // Check for validation errors (usually as an object)
+    if (typeof error.response.data === 'object' && !error.response.data.detail) {
+      errorMessage = Object.entries(error.response.data)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(', ');
+    }
   } else if (error.request) {
     errorMessage = 'No response from server';
   } else {
@@ -37,8 +44,7 @@ export const fetchProducts = async () => {
     const response = await axios.get(`${API_BASE_URL}/products/`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching products:', error);
-    throw error;
+    return handleApiError(error);
   }
 };
 
@@ -48,8 +54,7 @@ export const fetchProduct = async (id: string) => {
     const response = await axios.get(`${API_BASE_URL}/products/${id}/`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching product:', error);
-    throw error;
+    return handleApiError(error);
   }
 };
 
@@ -58,6 +63,10 @@ export const createProduct = async (productData: any) => {
   try {
     await configureAxiosCSRF();
     const response = await axios.post(`${API_BASE_URL}/products/`, productData);
+    toast({
+      title: "Success",
+      description: "Product created successfully",
+    });
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -69,6 +78,10 @@ export const updateProduct = async (id: string, productData: any) => {
   try {
     await configureAxiosCSRF();
     const response = await axios.put(`${API_BASE_URL}/products/${id}/`, productData);
+    toast({
+      title: "Success",
+      description: "Product updated successfully",
+    });
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -76,9 +89,14 @@ export const updateProduct = async (id: string, productData: any) => {
 };
 
 // Remove a product
-export const removeProduct = async (productId: string | number) => {
+export const removeProduct = async (id: string | number) => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/products/${productId}/`);
+    await configureAxiosCSRF();
+    const response = await axios.delete(`${API_BASE_URL}/products/${id}/`);
+    toast({
+      title: "Success",
+      description: "Product removed successfully",
+    });
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -91,8 +109,7 @@ export const fetchCategories = async () => {
     const response = await axios.get(`${API_BASE_URL}/categories/`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching categories:', error);
-    throw error;
+    return handleApiError(error);
   }
 };
 
@@ -101,6 +118,10 @@ export const createCategory = async (categoryData: any) => {
   try {
     await configureAxiosCSRF();
     const response = await axios.post(`${API_BASE_URL}/categories/`, categoryData);
+    toast({
+      title: "Success",
+      description: "Category created successfully",
+    });
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -112,6 +133,10 @@ export const updateCategory = async (id: string, categoryData: any) => {
   try {
     await configureAxiosCSRF();
     const response = await axios.put(`${API_BASE_URL}/categories/${id}/`, categoryData);
+    toast({
+      title: "Success",
+      description: "Category updated successfully",
+    });
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -123,6 +148,10 @@ export const deleteCategory = async (id: string) => {
   try {
     await configureAxiosCSRF();
     const response = await axios.delete(`${API_BASE_URL}/categories/${id}/`);
+    toast({
+      title: "Success",
+      description: "Category deleted successfully",
+    });
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -145,6 +174,10 @@ export const postComment = async (commentData: any) => {
   try {
     await configureAxiosCSRF();
     const response = await axios.post(`${API_BASE_URL}/comments/`, commentData);
+    toast({
+      title: "Success",
+      description: "Comment posted successfully",
+    });
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -193,6 +226,10 @@ export const loginUser = async (username: string, password: string) => {
   try {
     await configureAxiosCSRF();
     const response = await axios.post(`${API_BASE_URL}/auth/login/`, { username, password });
+    toast({
+      title: "Success",
+      description: "Logged in successfully",
+    });
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -203,6 +240,10 @@ export const logoutUser = async () => {
   try {
     await configureAxiosCSRF();
     const response = await axios.post(`${API_BASE_URL}/auth/logout/`);
+    toast({
+      title: "Success",
+      description: "Logged out successfully",
+    });
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -213,9 +254,12 @@ export const registerUser = async (userData: any) => {
   try {
     await configureAxiosCSRF();
     const response = await axios.post(`${API_BASE_URL}/auth/register/`, userData);
+    toast({
+      title: "Success",
+      description: "Registration successful",
+    });
     return response.data;
   } catch (error) {
     return handleApiError(error);
   }
 };
-

@@ -12,7 +12,7 @@ import { Product } from "../../types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { uploadImage, createProduct, updateProduct, removeProduct } from "../../utils/api"; // Import update and remove functions
+import { uploadImage, createProduct, updateProduct, removeProduct } from "../../utils/api";
 
 const ProductManagement = () => {
   const { products, categories } = useAppContext();
@@ -28,9 +28,9 @@ const ProductManagement = () => {
   const [imageInput, setImageInput] = useState("");
   const [customId, setCustomId] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false); // State for editing
-  const [currentProductId, setCurrentProductId] = useState(null); // Track current product ID
-  const fileInputRef = useRef<HTMLInputElement | null>(null); // Initialize file input reference
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentProductId, setCurrentProductId] = useState(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Handle file upload
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -57,7 +57,7 @@ const ProductManagement = () => {
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
-        fileInputRef.current.value = ''; // Clear the file input
+        fileInputRef.current.value = '';
       }
     }
   };
@@ -97,30 +97,29 @@ const ProductManagement = () => {
       customId: customId || undefined,
     };
 
-    console.log("Adding product:", newProduct);
+    console.log("Adding/updating product:", newProduct);
     
     try {
-      if (isEditing) {
-        await updateProduct(currentProductId, newProduct); // Update existing product
+      if (isEditing && currentProductId) {
+        await updateProduct(currentProductId.toString(), newProduct);
         toast({
           title: "محصول ویرایش شد",
           description: "محصول با موفقیت ویرایش شد",
         });
       } else {
-        await createProduct(newProduct); // Create new product
+        await createProduct(newProduct);
         toast({
           title: "محصول اضافه شد",
           description: "محصول با موفقیت اضافه شد",
         });
       }
       
-      // Reset form
       resetForm();
     } catch (error) {
-      console.error("Error adding/updating product:", error.response || error);
+      console.error("Error adding/updating product:", error);
       toast({
         title: "خطا",
-        description: "خطایی در افزودن یا ویرایش محصول رخ داد: " + (error.response?.data?.detail || error.message),
+        description: "خطایی در افزودن یا ویرایش محصول رخ داد",
         variant: "destructive",
       });
     }
@@ -136,11 +135,10 @@ const ProductManagement = () => {
     setCategory("");
     setImageInput("");
     setCustomId("");
-    setIsEditing(false); // Reset editing state
+    setIsEditing(false);
     setCurrentProductId(null);
   };
 
-  // Function to add image from URL
   const handleAddImageFromUrl = () => {
     if (!imageInput.trim()) {
       toast({
@@ -155,7 +153,6 @@ const ProductManagement = () => {
     setImageInput("");
   };
 
-  // Function to remove an image
   const handleRemoveImage = (index: number) => {
     const newImages = [...images];
     newImages.splice(index, 1);
@@ -167,7 +164,6 @@ const ProductManagement = () => {
     setImages(newImages);
   };
 
-  // Function to initiate editing a product
   const handleEditProduct = (product: Product) => {
     setName(product.name);
     setPrice(product.price.toString());
@@ -177,19 +173,17 @@ const ProductManagement = () => {
     setImages(product.images);
     setCategory(product.category);
     setCustomId(product.customId || "");
-    setCurrentProductId(product.id); // Set current product ID
-    setIsEditing(true); // Set editing state
+    setCurrentProductId(product.id);
+    setIsEditing(true);
   };
 
-  // Function to remove a product
-  const handleRemoveProduct = async (productId: number) => {
+  const handleRemoveProduct = async (productId: string | number) => {
     try {
-      await removeProduct(productId);
+      await removeProduct(productId.toString());
       toast({
         title: "محصول حذف شد",
         description: "محصول با موفقیت حذف شد",
       });
-      // Optionally refresh the products list or remove it from state
     } catch (error) {
       console.error("Error removing product:", error);
       toast({
@@ -333,13 +327,13 @@ const ProductManagement = () => {
                 type="file"
                 ref={fileInputRef}
                 style={{ display: 'none' }}
-                onChange={handleFileUpload} // Call the file upload handler
+                onChange={handleFileUpload}
                 accept="image/*"
               />
               <Button 
                 type="button" 
                 variant="outline"
-                onClick={() => fileInputRef.current?.click()} // Open file dialog
+                onClick={() => fileInputRef.current?.click()}
                 className="w-full"
               >
                 {isUploading ? (
@@ -358,7 +352,6 @@ const ProductManagement = () => {
         </form>
       </div>
 
-      {/* Product List */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-6">لیست محصولات</h2>
 
@@ -405,14 +398,14 @@ const ProductManagement = () => {
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          onClick={() => handleEditProduct(product)} // Edit functionality
+                          onClick={() => handleEditProduct(product)}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          onClick={() => handleRemoveProduct(product.id)} // Remove functionality
+                          onClick={() => handleRemoveProduct(product.id)}
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>

@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Pencil, Trash2 } from "lucide-react";
 import { useAppContext } from "../../contexts/AppContext";
 import { formatDate } from "../../utils/formatters";
@@ -88,37 +87,41 @@ const CategoryManagement = () => {
           </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories.map((category: Category) => (
-              <Card key={category.id}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-semibold">{category.name}</h3>
-                    <div className="flex space-x-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => openEditDialog(category)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                        <span className="sr-only">ویرایش</span>
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="text-red-500 hover:text-red-700" 
-                        onClick={() => handleDeleteCategory(category.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">حذف</span>
-                      </Button>
+            {categories.map((category: Category) => {
+              // Log the date value for debugging
+              console.log("Category Date:", category.createdAt);
+              return (
+                <Card key={category.id}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-semibold">{category.name}</h3>
+                      <div className="flex space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => openEditDialog(category)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">ویرایش</span>
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="text-red-500 hover:text-red-700" 
+                          onClick={() => handleDeleteCategory(category.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">حذف</span>
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-2">
-                    {formatDate(category.createdAt)}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="text-xs text-muted-foreground mt-2">
+                      {formatDate(category.createdAt)}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

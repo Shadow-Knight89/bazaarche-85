@@ -81,7 +81,9 @@ interface AppContextType {
   
   // From PurchaseContext
   purchases: any[];
-  addPurchase: () => void;
+  addPurchase: (items?: any[], total?: number) => void;
+  loadPurchases: () => Promise<void>;
+  loading: boolean;
 }
 
 // Create the context with default value
@@ -171,10 +173,13 @@ const CombinedProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const purchaseContext = usePurchaseContext();
 
   // Add purchase wrapper for backward compatibility
-  const addPurchase = () => {
-    if (userContext.user && cartContext.cart.length > 0) {
-      const { total } = cartContext.calculateTotal();
-      purchaseContext.addPurchase(cartContext.cart, total);
+  const addPurchase = (items?: any[], totalAmount?: number) => {
+    if (userContext.user) {
+      const cart = items || cartContext.cart;
+      if (cart.length > 0) {
+        const { total } = totalAmount !== undefined ? { total: totalAmount } : cartContext.calculateTotal();
+        purchaseContext.addPurchase(cart, total);
+      }
     }
   };
 

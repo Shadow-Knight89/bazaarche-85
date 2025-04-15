@@ -54,11 +54,11 @@ const Cart = () => {
       return;
     }
     
-    addPurchase();
-    toast({
-      title: "خرید موفق",
-      description: "سفارش شما با موفقیت ثبت شد",
-    });
+    // Send purchase to the server through the context
+    // This will now use our API to store the purchase in the database
+    addPurchase(cart, total);
+    
+    // Redirect to home page
     navigate("/");
   };
 

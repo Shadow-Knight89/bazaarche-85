@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppContext } from "../../contexts/AppContext";
 import { formatPrice, formatDate } from "../../utils/formatters";
 import {
@@ -10,26 +10,77 @@ import {
 } from "@/components/ui/accordion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, User, Calendar, DollarSign } from "lucide-react";
+import { Package, User, Calendar, DollarSign, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PurchaseHistory = () => {
-  const { purchases } = useAppContext();
+  const { purchases, loadPurchases, loading } = useAppContext();
   
+  // Load purchases when the component mounts
+  useEffect(() => {
+    loadPurchases();
+  }, []);
+  
+  // Handler to refresh purchases
+  const handleRefresh = () => {
+    loadPurchases();
+  };
+  
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">تاریخچه سفارشات</h2>
+          <Button variant="outline" disabled>
+            <RefreshCw className="ml-2 h-4 w-4 animate-spin" />
+            در حال بارگذاری...
+          </Button>
+        </div>
+        
+        {Array(3).fill(0).map((_, index) => (
+          <div key={index} className="mb-4">
+            <Skeleton className="h-16 w-full mb-2" />
+            <Skeleton className="h-48 w-full" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  
+  // Show empty state
   if (purchases.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Package className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
-        <h2 className="mt-4 text-xl font-semibold">هیچ سفارشی وجود ندارد</h2>
-        <p className="mt-2 text-muted-foreground">
-          هنوز هیچ سفارشی در سیستم ثبت نشده است.
-        </p>
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">تاریخچه سفارشات</h2>
+          <Button variant="outline" onClick={handleRefresh}>
+            <RefreshCw className="ml-2 h-4 w-4" />
+            بارگذاری مجدد
+          </Button>
+        </div>
+        
+        <div className="text-center py-12">
+          <Package className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
+          <h2 className="mt-4 text-xl font-semibold">هیچ سفارشی وجود ندارد</h2>
+          <p className="mt-2 text-muted-foreground">
+            هنوز هیچ سفارشی در سیستم ثبت نشده است.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold mb-6">تاریخچه سفارشات</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold">تاریخچه سفارشات</h2>
+        <Button variant="outline" onClick={handleRefresh}>
+          <RefreshCw className={`ml-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          بارگذاری مجدد
+        </Button>
+      </div>
       
       <Accordion type="single" collapsible className="w-full">
         {purchases.map((purchase, index) => (

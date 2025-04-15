@@ -6,7 +6,7 @@ import {
   fetchProducts, 
   createProduct, 
   updateProduct, 
-  deleteProduct
+  removeProduct
 } from "../../utils/api";
 
 interface ProductContextType {

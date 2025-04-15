@@ -9,6 +9,20 @@ import { useAppContext } from "../contexts/AppContext";
 import Welcome from "../components/Welcome";
 import { fetchProducts, configureAxiosCSRF } from "../utils/api"; // Import your API functions
 
+javascript
+
+Copy
+import { useEffect, useState } from "react";
+import Navbar from "../components/Navbar"; // Import your Navbar
+import ProductCard from "../components/ProductCard"; // Import your ProductCard
+import { Input } from "@/components/ui/input"; // Import Input component
+import { Button } from "@/components/ui/button"; // Import Button component
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
+import { fetchProducts, configureAxiosCSRF } from "../utils/api"; // Import your API functions
+import { useAppContext } from "../contexts/AppContext"; // Import context
+import Welcome from "../components/Welcome"; // Import Welcome component
+import { Product } from "../types"; // Import Product type
+
 const Index = () => {
   const { categories } = useAppContext(); // Get categories from context
   const [products, setProducts] = useState<Product[]>([]);
@@ -22,6 +36,7 @@ const Index = () => {
       try {
         await configureAxiosCSRF(); // Ensure CSRF token is set
         const productsData = await fetchProducts();
+        console.log(productsData); // Log to check product IDs
         setProducts(productsData);
       } catch (error) {
         setError((error as Error).message); // Capture any errors
@@ -64,9 +79,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
       <Welcome />
-      
       <main className="container mx-auto px-4 py-8 flex-grow">
         <div className="flex flex-col md:flex-row gap-4 mb-8 items-end">
           <div className="flex-1">
@@ -126,7 +139,7 @@ const Index = () => {
         <div id="products" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {error && <p className="text-red-500">{error}</p>}
           {filteredProducts.map((product: Product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product} /> // Ensure product.id is unique
           ))}
         </div>
         

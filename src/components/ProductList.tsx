@@ -28,7 +28,7 @@ const ProductList: React.FC = () => {
             {error && <p>Error fetching products: {error}</p>}
             <div className="product-list grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {products.map(product => (
-                    <ProductCard key={product.id} product={product} />
+                    <ProductCard key={product.id} product={product} /> // Ensure each ProductCard has a unique key
                 ))}
             </div>
         </div>

@@ -30,7 +30,7 @@ const handleApiError = (error: any) => {
   return Promise.reject(error);
 };
 
-// Get all products
+// Fetch all products
 export const fetchProducts = async () => {
   try {
     const response = await axios.get(`${API_BASE_URL}/products/`);
@@ -41,7 +41,7 @@ export const fetchProducts = async () => {
   }
 };
 
-// Get single product
+// Fetch a single product
 export const fetchProduct = async (id: string) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/products/${id}/`);
@@ -52,18 +52,19 @@ export const fetchProduct = async (id: string) => {
   }
 };
 
-// Create product
+// Create a product
 export const createProduct = async (productData: any) => {
   try {
     await configureAxiosCSRF();
-    const response = await axios.post(`${API_BASE_URL}/products/`, productData);
+	const response = await axios.get(`${API_BASE_URL}/products/`);
+    console.log(response.data); // Check if IDs are unique
     return response.data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-// Update product
+// Update a product
 export const updateProduct = async (id: string, productData: any) => {
   try {
     await configureAxiosCSRF();
@@ -74,18 +75,17 @@ export const updateProduct = async (id: string, productData: any) => {
   }
 };
 
-// Delete product
-export const deleteProduct = async (id: string) => {
+// Remove a product
+export const removeProduct = async (productId: number) => {
   try {
-    await configureAxiosCSRF();
-    const response = await axios.delete(`${API_BASE_URL}/products/${id}/`);
+    const response = await axios.delete(`${API_BASE_URL}/products/${productId}/`);
     return response.data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-// Get all categories
+// Fetch all categories
 export const fetchCategories = async () => {
   try {
     const response = await axios.get(`${API_BASE_URL}/categories/`);
@@ -96,7 +96,7 @@ export const fetchCategories = async () => {
   }
 };
 
-// Create category
+// Create a category
 export const createCategory = async (categoryData: any) => {
   try {
     await configureAxiosCSRF();
@@ -107,7 +107,7 @@ export const createCategory = async (categoryData: any) => {
   }
 };
 
-// Update category
+// Update a category
 export const updateCategory = async (id: string, categoryData: any) => {
   try {
     await configureAxiosCSRF();
@@ -118,7 +118,7 @@ export const updateCategory = async (id: string, categoryData: any) => {
   }
 };
 
-// Delete category
+// Delete a category
 export const deleteCategory = async (id: string) => {
   try {
     await configureAxiosCSRF();
@@ -129,7 +129,7 @@ export const deleteCategory = async (id: string) => {
   }
 };
 
-// Get comments for a product
+// Fetch comments for a product
 export const fetchComments = async (productId: string) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/comments/?product=${productId}`);
@@ -151,7 +151,7 @@ export const postComment = async (commentData: any) => {
   }
 };
 
-// Upload image
+// Upload an image
 export const uploadImage = async (formData: FormData) => {
   try {
     await configureAxiosCSRF();
@@ -166,12 +166,10 @@ export const uploadImage = async (formData: FormData) => {
   }
 };
 
-// Add CSRF token handling for Django
+// Get CSRF token handling for Django
 export const getCSRFToken = async () => {
   try {
-    // Get the CSRF token from Django
     await axios.get(`${API_BASE_URL}/csrf/`);
-    // Return the CSRF token from cookies
     return document.cookie
         .split('; ')
         .find(row => row.startsWith('csrftoken='))
@@ -220,3 +218,4 @@ export const registerUser = async (userData: any) => {
     return handleApiError(error);
   }
 };
+

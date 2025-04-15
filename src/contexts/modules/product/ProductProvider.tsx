@@ -1,25 +1,14 @@
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { Product } from "../../types";
+import React, { useState, useEffect } from "react";
+import { Product } from "../../../types";
 import { toast } from "@/components/ui/use-toast";
 import { 
   fetchProducts, 
   createProduct, 
   updateProduct, 
   removeProduct as apiRemoveProduct
-} from "../../utils/api";
-
-interface ProductContextType {
-  products: Product[];
-  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
-  editProduct: (id: string, product: Partial<Product>) => Promise<void>;
-  removeProduct: (id: string) => Promise<void>;
-  getProductByCustomId: (customId: string) => Product | undefined;
-}
-
-const ProductContext = createContext<ProductContextType>({} as ProductContextType);
-
-export const useProductContext = () => useContext(ProductContext);
+} from "../../../utils/api";
+import { ProductContext } from "./ProductContext";
 
 export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([

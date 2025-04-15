@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, ReactNode } from "react";
-import { ProductProvider } from "./modules/ProductContext";
+import { ProductProvider } from "./modules/product";
 import { CategoryProvider } from "./modules/CategoryContext";
 import { CartProvider } from "./modules/CartContext";
 import { UserProvider } from "./modules/UserContext";
@@ -9,7 +9,7 @@ import { GiftCodeProvider } from "./modules/GiftCodeContext";
 import { PurchaseProvider } from "./modules/PurchaseContext";
 import { StoreProvider } from "./modules/StoreContext";
 
-import { useProductContext } from "./modules/ProductContext";
+import { useProductContext } from "./modules/product";
 import { useCategoryContext } from "./modules/CategoryContext";
 import { useCartContext } from "./modules/CartContext";
 import { useUserContext } from "./modules/UserContext";

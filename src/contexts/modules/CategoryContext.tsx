@@ -35,7 +35,14 @@ export const CategoryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         const categoriesData = await fetchCategories();
         if (categoriesData && Array.isArray(categoriesData)) {
-          setCategories(categoriesData);
+          // Transform categories from Django format
+          const formattedCategories = categoriesData.map(category => ({
+            ...category,
+            id: category.id.toString(),
+            createdAt: category.createdAt || new Date().toISOString()
+          }));
+          
+          setCategories(formattedCategories);
         }
       } catch (error) {
         console.error('Error loading categories:', error);

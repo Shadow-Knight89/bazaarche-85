@@ -105,14 +105,12 @@ const ProductManagement = () => {
         toast({
           title: "محصول ویرایش شد",
           description: "محصول با موفقیت ویرایش شد",
-          variant: "success",
         });
       } else {
         await createProduct(newProduct); // Create new product
         toast({
           title: "محصول اضافه شد",
           description: "محصول با موفقیت اضافه شد",
-          variant: "success",
         });
       }
       
@@ -190,7 +188,6 @@ const ProductManagement = () => {
       toast({
         title: "محصول حذف شد",
         description: "محصول با موفقیت حذف شد",
-        variant: "success",
       });
       // Optionally refresh the products list or remove it from state
     } catch (error) {

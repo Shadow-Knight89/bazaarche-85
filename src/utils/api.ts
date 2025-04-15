@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { toast } from '@/components/ui/use-toast';
 
-// Django backend URL - adjust this to your Django server's address
+// Django backend URL - make sure this matches your Django server's address
 const API_BASE_URL = 'http://localhost:8000/api'; 
 
 // Configure axios to include credentials for handling sessions
@@ -56,8 +56,7 @@ export const fetchProduct = async (id: string) => {
 export const createProduct = async (productData: any) => {
   try {
     await configureAxiosCSRF();
-	const response = await axios.get(`${API_BASE_URL}/products/`);
-    console.log(response.data); // Check if IDs are unique
+    const response = await axios.post(`${API_BASE_URL}/products/`, productData);
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -76,7 +75,7 @@ export const updateProduct = async (id: string, productData: any) => {
 };
 
 // Remove a product
-export const removeProduct = async (productId: number) => {
+export const removeProduct = async (productId: string | number) => {
   try {
     const response = await axios.delete(`${API_BASE_URL}/products/${productId}/`);
     return response.data;

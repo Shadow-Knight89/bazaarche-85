@@ -91,12 +91,12 @@ export const CommentProvider: React.FC<{ children: React.ReactNode }> = ({ child
           // Transform API response to our Comment format
           const formattedComments: Comment[] = commentsData.map((comment: any) => ({
             id: comment.id.toString(),
-            productId: comment.product.toString(),
+            productId: typeof comment.product === 'object' ? comment.product.id.toString() : comment.product.toString(),
             userId: comment.user?.id?.toString() || "unknown",
             username: comment.user?.username || "unknown",
-            isAdmin: false,
+            isAdmin: comment.user?.is_superuser || false,
             text: comment.text,
-            createdAt: comment.createdAt || new Date().toISOString(),
+            createdAt: comment.createdAt || comment.created_at || new Date().toISOString(),
             replies: [], // API doesn't support replies yet
           }));
           

@@ -6,7 +6,7 @@ import {
   fetchProducts, 
   createProduct, 
   updateProduct, 
-  removeProduct
+  removeProduct as apiRemoveProduct
 } from "../../utils/api";
 
 interface ProductContextType {
@@ -72,7 +72,18 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
       try {
         const productsData = await fetchProducts();
         if (productsData && Array.isArray(productsData)) {
-          setProducts(productsData);
+          // Transform products from Django format
+          const formattedProducts = productsData.map(product => ({
+            ...product,
+            id: product.id.toString(),
+            // Handle category that might be an ID or object from Django
+            category: product.category?.name || product.category,
+            createdAt: product.createdAt || new Date().toISOString(),
+            // Ensure images is always an array
+            images: Array.isArray(product.images) ? product.images : []
+          }));
+          
+          setProducts(formattedProducts);
         }
       } catch (error) {
         console.error('Error loading products:', error);
@@ -94,12 +105,28 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     try {
+      // Format data for Django
+      const productForDjango = {
+        ...product,
+        // Convert string category to ID if needed
+        category: typeof product.category === 'string' && !isNaN(parseInt(product.category)) 
+          ? parseInt(product.category) 
+          : product.category
+      };
+      
       // Send to API
-      const response = await createProduct(product);
+      const response = await createProduct(productForDjango);
       
       if (response) {
-        // Add to local state
-        setProducts((prev) => [...prev, response]);
+        // Add to local state - convert from Django format if needed
+        const formattedProduct = {
+          ...response,
+          id: response.id.toString(),
+          // Format category if needed
+          category: response.category?.name || response.category,
+          createdAt: response.createdAt || new Date().toISOString()
+        };
+        setProducts((prev) => [...prev, formattedProduct]);
         
         toast({
           title: "محصول جدید",
@@ -133,8 +160,17 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const currentProduct = products.find(p => p.id === id);
       if (!currentProduct) return;
       
+      // Format data for Django
+      const productForDjango = {
+        ...product,
+        // Convert string category to ID if needed
+        category: typeof product.category === 'string' && !isNaN(parseInt(product.category)) 
+          ? parseInt(product.category) 
+          : product.category
+      };
+      
       // Merge current with updates
-      const updatedProduct = { ...currentProduct, ...product };
+      const updatedProduct = { ...currentProduct, ...productForDjango };
       
       // Send to API
       await updateProduct(id, updatedProduct);
@@ -157,8 +193,8 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
   
   const removeProduct = async (id: string) => {
     try {
-      // Send delete request to API
-      await deleteProduct(id);
+      // Send delete request to API - using the imported function
+      await apiRemoveProduct(id);
       
       // Update local state
       setProducts(prevProducts => prevProducts.filter(p => p.id !== id));

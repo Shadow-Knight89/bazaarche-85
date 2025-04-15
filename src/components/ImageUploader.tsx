@@ -2,6 +2,8 @@
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { uploadImage } from "@/utils/api";
+import { toast } from "@/components/ui/use-toast";
 
 interface ImageUploaderProps {
   images: string[];
@@ -16,6 +18,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleClick = () => {
     if (fileInputRef.current) {
@@ -23,7 +26,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -33,26 +36,43 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     }
 
     setError(null);
+    setIsUploading(true);
     
     const newImages: string[] = [...images];
     
-    Array.from(files).forEach(file => {
+    for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) {
         setError('فقط فایل‌های تصویری مجاز هستند');
-        return;
+        continue;
       }
       
-      // In a real backend application, we would upload to a server
-      // For now, we'll use the browser's FileReader API to create a base64 URL
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          newImages.push(reader.result);
-          onImagesChange(newImages);
+      // Upload to Django backend
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await uploadImage(formData);
+        if (response && response.url) {
+          newImages.push(response.url);
+        } else {
+          toast({
+            title: "خطا",
+            description: "آپلود تصویر با مشکل مواجه شد",
+            variant: "destructive",
+          });
         }
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch (err) {
+        console.error('Error uploading image:', err);
+        toast({
+          title: "خطا",
+          description: "آپلود تصویر با مشکل مواجه شد",
+          variant: "destructive",
+        });
+      }
+    }
+    
+    onImagesChange(newImages);
+    setIsUploading(false);
 
     // Reset the file input to allow selecting the same files again
     if (fileInputRef.current) {
@@ -101,9 +121,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           type="button"
           variant="outline"
           onClick={handleClick}
-          disabled={images.length >= maxImages}
+          disabled={isUploading || images.length >= maxImages}
         >
-          آپلود تصاویر
+          {isUploading ? 'در حال آپلود...' : 'آپلود تصاویر'}
         </Button>
         <span className="text-xs text-gray-500 mr-2">
           {images.length} از {maxImages} تصویر

@@ -3,32 +3,26 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
-import { Slider } from './ui/slider';
 import { ArrowUpDown, Filter, Search, X } from 'lucide-react';
 
 export type FilterValues = {
   search?: string;
   category?: string;
-  minPrice?: number;
-  maxPrice?: number;
   sort?: string;
 };
 
 interface ProductFiltersProps {
   categories: { id: string; name: string }[];
-  maxPriceRange: number;
   onFilterChange: (filters: FilterValues) => void;
   onReset: () => void;
 }
 
 const ProductFilters: React.FC<ProductFiltersProps> = ({
   categories = [],
-  maxPriceRange = 10000000,
   onFilterChange,
   onReset
 }) => {
   const [filters, setFilters] = useState<FilterValues>({});
-  const [priceRange, setPriceRange] = useState<number[]>([0, maxPriceRange]);
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Ensure categories is always an array
@@ -46,13 +40,6 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     onFilterChange(newFilters);
   };
 
-  const handlePriceChange = (values: number[]) => {
-    setPriceRange(values);
-    const newFilters = { ...filters, minPrice: values[0], maxPrice: values[1] };
-    setFilters(newFilters);
-    onFilterChange(newFilters);
-  };
-
   const handleSortChange = (value: string) => {
     const newFilters = { ...filters, sort: value === "default" ? undefined : value };
     setFilters(newFilters);
@@ -61,7 +48,6 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
 
   const handleReset = () => {
     setFilters({});
-    setPriceRange([0, maxPriceRange]);
     onReset();
   };
 
@@ -131,24 +117,6 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                 <SelectItem value="newest">جدیدترین</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Price range slider */}
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm">محدوده قیمت:</span>
-              <span className="text-sm">
-                {priceRange[0].toLocaleString()} - {priceRange[1].toLocaleString()} تومان
-              </span>
-            </div>
-            <Slider
-              defaultValue={[0, maxPriceRange]}
-              value={priceRange}
-              max={maxPriceRange}
-              step={10000}
-              onValueChange={handlePriceChange}
-              className="my-4"
-            />
           </div>
 
           {/* Reset button */}

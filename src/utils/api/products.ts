@@ -19,8 +19,6 @@ export const fetchProducts = async (params?: FetchProductsParams) => {
     if (params) {
       if (params.search) queryParams.search = params.search;
       if (params.category) queryParams.category = params.category;
-      if (params.minPrice) queryParams.min_price = params.minPrice;
-      if (params.maxPrice) queryParams.max_price = params.maxPrice;
       if (params.page) queryParams.page = params.page;
       
       // Handle sorting
@@ -105,6 +103,9 @@ export const createProduct = async (productData: any) => {
     await configureAxiosCSRF();
     
     const response = await axios.post(`${API_BASE_URL}/products/`, productData, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
       withCredentials: true
     });
     
@@ -125,6 +126,9 @@ export const updateProduct = async (id: string, productData: any) => {
     await configureAxiosCSRF();
     
     const response = await axios.put(`${API_BASE_URL}/products/${id}/`, productData, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
       withCredentials: true
     });
     
@@ -145,6 +149,9 @@ export const removeProduct = async (id: string | number) => {
     await configureAxiosCSRF();
     
     const response = await axios.delete(`${API_BASE_URL}/products/${id}/`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
       withCredentials: true
     });
     

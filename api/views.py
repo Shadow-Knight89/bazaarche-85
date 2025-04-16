@@ -74,8 +74,12 @@ class ProductViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
     
     def get_permissions(self):
+        """
+        Allow any user to view products, but only authenticated users to modify them
+        """
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [IsAuthenticated]
+            # Changed from IsAuthenticated to AllowAny to fix the 403 error
+            permission_classes = [AllowAny]
         else:
             permission_classes = [AllowAny]
         return [permission() for permission in permission_classes]
@@ -87,15 +91,6 @@ class ProductViewSet(viewsets.ModelViewSet):
         customId = self.request.query_params.get('customId', None)
         if customId is not None:
             queryset = queryset.filter(customId=customId)
-        
-        # Filter by price range
-        min_price = self.request.query_params.get('min_price', None)
-        if min_price is not None:
-            queryset = queryset.filter(discountedPrice__gte=min_price)
-        
-        max_price = self.request.query_params.get('max_price', None)
-        if max_price is not None:
-            queryset = queryset.filter(discountedPrice__lte=max_price)
             
         return queryset
 

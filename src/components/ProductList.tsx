@@ -14,9 +14,6 @@ const ProductList: React.FC<ProductListProps> = ({ categories = [] }) => {
     const [filters, setFilters] = useState<FilterValues>({});
     const [currentPage, setCurrentPage] = useState(1);
     
-    // Calculate max price for the slider
-    const maxPrice = 10000000; // Default max price (10 million tomans)
-    
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['products', filters, currentPage],
         queryFn: async () => {
@@ -53,7 +50,6 @@ const ProductList: React.FC<ProductListProps> = ({ categories = [] }) => {
         <div>
             <ProductFilters 
                 categories={safeCategories}
-                maxPriceRange={maxPrice}
                 onFilterChange={handleFilterChange}
                 onReset={handleResetFilters}
             />

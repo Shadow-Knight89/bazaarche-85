@@ -1,4 +1,3 @@
-
 from rest_framework import serializers
 from .models import Product, Comment, Category, Purchase, PurchaseItem
 from django.contrib.auth.models import User
@@ -24,7 +23,7 @@ class ProductSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'price', 'discountedPrice', 'category', 'category_name', 'images', 'createdAt']
+        fields = ['id', 'name', 'description', 'price', 'discountedPrice', 'category', 'category_name', 'images', 'createdAt', 'customId']
     
     def get_category_name(self, obj):
         return obj.category.name if obj.category else None

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAppContext } from "../contexts/AppContext";
@@ -9,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShoppingCart, ArrowLeft } from "lucide-react";
 import CommentSection from "../components/CommentSection";
+import { fetchProductByCustomId } from "../utils/api";
+import { toast } from "@/components/ui/use-toast";
 
 const ProductDetail = () => {
   const { productId, customId } = useParams();
@@ -16,20 +17,54 @@ const ProductDetail = () => {
   const location = useLocation();
   const { products, addToCart, user, getProductByCustomId } = useAppContext();
   const [activeImage, setActiveImage] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [product, setProduct] = useState(null);
   
-  // Find the product by ID or custom ID
-  let product = productId ? products.find((p) => p.id === productId) : null;
-  
-  if (!product && customId) {
-    product = getProductByCustomId(customId);
-  }
-  
-  // Handle if product not found
   useEffect(() => {
-    if (!product && (productId || customId)) {
-      navigate("/not-found");
-    }
-  }, [product, productId, customId, navigate]);
+    const loadProduct = async () => {
+      setLoading(true);
+      
+      // Try to find product in the existing state first
+      let foundProduct = productId ? products.find((p) => p.id === productId) : null;
+      
+      if (!foundProduct && customId) {
+        foundProduct = products.find(p => p.customId === customId);
+        
+        // If not found in state, try to fetch from API
+        if (!foundProduct) {
+          try {
+            const fetchedProduct = await fetchProductByCustomId(customId);
+            if (fetchedProduct) {
+              foundProduct = fetchedProduct;
+            }
+          } catch (error) {
+            console.error("Error fetching product by customId:", error);
+            toast({
+              title: "Error",
+              description: "Product not found",
+              variant: "destructive"
+            });
+          }
+        }
+      }
+      
+      if (foundProduct) {
+        setProduct(foundProduct);
+      } else {
+        navigate("/not-found");
+      }
+      
+      setLoading(false);
+    };
+    
+    loadProduct();
+  }, [productId, customId, products, navigate]);
+  
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>;
+  }
   
   if (!product) {
     return null;
@@ -61,7 +96,6 @@ const ProductDetail = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          {/* Product Images Gallery */}
           <div className="space-y-4">
             <div className="aspect-square overflow-hidden rounded-lg border">
               <img 
@@ -92,7 +126,6 @@ const ProductDetail = () => {
             )}
           </div>
           
-          {/* Product Info */}
           <div className="space-y-6">
             <div className="flex flex-col space-y-1">
               {hasDiscount && (
@@ -156,7 +189,6 @@ const ProductDetail = () => {
           </div>
         </div>
         
-        {/* Similar Products */}
         {similarProducts.length > 0 && (
           <div className="mt-12">
             <h2 className="text-2xl font-bold mb-4">محصولات مشابه</h2>
@@ -191,7 +223,6 @@ const ProductDetail = () => {
           </div>
         )}
         
-        {/* Comments Section */}
         <CommentSection productId={product.id} />
       </main>
     </div>

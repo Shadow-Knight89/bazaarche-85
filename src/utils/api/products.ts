@@ -13,11 +13,24 @@ export const fetchProducts = async () => {
   }
 };
 
-// Fetch a single product
+// Fetch a single product by ID
 export const fetchProduct = async (id: string) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/products/${id}/`);
     return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+// Fetch a product by customId
+export const fetchProductByCustomId = async (customId: string) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/products/?customId=${customId}`);
+    if (response.data && response.data.length > 0) {
+      return response.data[0];
+    }
+    throw new Error('Product not found');
   } catch (error) {
     return handleApiError(error);
   }

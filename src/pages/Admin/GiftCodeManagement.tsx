@@ -8,6 +8,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAppContext } from "../../contexts/AppContext";
 import { formatDate } from "../../utils/formatters";
+import { GiftCode } from "../../types";
+import { toast } from "@/components/ui/use-toast";
 
 const GiftCodeManagement = () => {
   const { giftCodes, addGiftCode } = useAppContext();
@@ -33,17 +35,21 @@ const GiftCodeManagement = () => {
     
     // Validate percentage is between 1 and 100
     if (discountType === "percentage" && (parsedDiscountValue < 1 || parsedDiscountValue > 100)) {
-      alert("درصد تخفیف باید بین 1 تا 100 باشد");
+      toast({
+        title: "خطا",
+        description: "درصد تخفیف باید بین 1 تا 100 باشد",
+        variant: "destructive"
+      });
       return;
     }
     
-    const newGiftCode = {
+    const newGiftCode: Omit<GiftCode, 'id' | 'createdAt'> = {
       code: code.toUpperCase(),
       discountType,
       discountValue: parsedDiscountValue,
       isGlobal,
-      isUsed: false,  // Add the missing properties
-      usedBy: null    // Add the missing properties
+      isUsed: false,
+      usedBy: null
     };
     
     addGiftCode(newGiftCode);

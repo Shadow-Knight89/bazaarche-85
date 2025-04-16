@@ -31,10 +31,11 @@ export interface AppContextValue {
   calculateTotal: () => { subtotal: number; discount: number; total: number };
   
   // From GiftCodeContext
-  giftCodes: any[];
-  addGiftCode: (code: any) => void;
+  giftCodes: GiftCode[];
+  addGiftCode: (code: Omit<GiftCode, 'id' | 'createdAt'>) => void;
   applyGiftCode: (code: GiftCode) => void;
   appliedGiftCode: GiftCode | null;
+  findAndApplyGiftCode?: (code: string) => boolean;
   
   // From UserContext
   user: any | null;

@@ -16,6 +16,12 @@ const ProductManagement = () => {
     setProductToEdit(product);
     setActiveTab("add");
   };
+  
+  const handleDeleteProduct = (productId: string) => {
+    // This would typically call the API to delete the product
+    console.log("Deleting product with ID:", productId);
+    // Then update the UI or refresh the product list
+  };
 
   const handleProductSaved = () => {
     setActiveTab("list");
@@ -55,7 +61,10 @@ const ProductManagement = () => {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="list">
-              <ProductList onEditProduct={handleEditProduct} />
+              <ProductList 
+                onEditProduct={handleEditProduct} 
+                onDeleteProduct={handleDeleteProduct}
+              />
             </TabsContent>
             <TabsContent value="add">
               <ProductForm 

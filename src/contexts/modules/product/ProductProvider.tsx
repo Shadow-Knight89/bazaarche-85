@@ -67,6 +67,10 @@ export const ProductProvider = ({ children }: ProductProviderProps) => {
     }
   };
 
+  // Add alias functions for compatibility
+  const editProduct = updateProduct;
+  const removeProduct = deleteProduct;
+
   return (
     <ProductContext.Provider
       value={{
@@ -78,6 +82,9 @@ export const ProductProvider = ({ children }: ProductProviderProps) => {
         addProduct,
         updateProduct,
         deleteProduct,
+        // Add aliases to the context value
+        editProduct,
+        removeProduct,
       }}
     >
       {children}

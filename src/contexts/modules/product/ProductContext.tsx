@@ -11,4 +11,7 @@ export const ProductContext = createContext<ProductContextType>({
   addProduct: () => Promise.resolve(null),
   updateProduct: () => Promise.resolve(null),
   deleteProduct: () => Promise.resolve(false),
+  // Add aliases for compatibility with existing code
+  editProduct: () => Promise.resolve(null),
+  removeProduct: () => Promise.resolve(false),
 });

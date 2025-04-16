@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode } from "react";
 import { ProductProvider } from "./modules/product";
 import { CategoryProvider } from "./modules/CategoryContext";
@@ -183,10 +182,16 @@ const CombinedProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     }
   };
 
+  // Map product context functions to the expected names
+  const productContextWithAliases = {
+    ...productContext,
+    // These are now provided directly by the ProductContext
+  };
+
   // Combine all values from all contexts
   const combinedValue = {
     ...storeContext,
-    ...productContext,
+    ...productContextWithAliases,
     ...categoryContext,
     ...cartContext,
     ...userContext,

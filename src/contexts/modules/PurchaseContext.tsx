@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Purchase, CartItem } from "../../types";
 import { useUserContext } from "./UserContext";
@@ -6,7 +7,7 @@ import { createPurchase, fetchPurchases } from "../../utils/api";
 
 interface PurchaseContextType {
   purchases: Purchase[];
-  addPurchase: (items: CartItem[], total: number) => void;
+  addPurchase: (items: CartItem[], total: number, shippingAddressId?: string) => void;
   loadPurchases: () => Promise<void>;
   loading: boolean;
 }
@@ -70,12 +71,13 @@ export const PurchaseProvider: React.FC<{
     }
   };
 
-  const addPurchase = async (items: CartItem[], total: number) => {
+  const addPurchase = async (items: CartItem[], total: number, shippingAddressId?: string) => {
     if (!user || items.length === 0) return;
     
     // Format the purchase data for the API
     const purchaseData = {
       total,
+      shippingAddressId: shippingAddressId || undefined,
       items: items.map(item => ({
         product: item.product.id,
         quantity: item.quantity,
@@ -95,7 +97,8 @@ export const PurchaseProvider: React.FC<{
           username: user.username,
           items: [...items],
           total,
-          createdAt: response.createdAt || new Date().toISOString()
+          createdAt: response.createdAt || new Date().toISOString(),
+          shippingAddress: response.shipping_address
         };
         
         setPurchases(prev => [...prev, newPurchase]);
@@ -115,6 +118,7 @@ export const PurchaseProvider: React.FC<{
         description: "مشکلی در ثبت سفارش به وجود آمد",
         variant: "destructive"
       });
+      throw error; // Rethrow to handle in the component
     }
   };
 

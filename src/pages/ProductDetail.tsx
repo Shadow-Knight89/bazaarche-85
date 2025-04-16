@@ -1,230 +1,137 @@
-import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { fetchProduct, fetchProductByCustomId } from "../utils/api";
+import { Product } from "../types";
 import { useAppContext } from "../contexts/AppContext";
-import { formatPrice, formatDate } from "../utils/formatters";
-import Navbar from "../components/Navbar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingCart, ArrowLeft } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
+import { formatPrice } from "../utils/formatters";
 import CommentSection from "../components/CommentSection";
-import { fetchProductByCustomId } from "../utils/api";
-import { toast } from "@/components/ui/use-toast";
 
 const ProductDetail = () => {
-  const { productId, customId } = useParams();
+  const { productId, customId } = useParams<{ productId: string; customId: string }>();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { addToCart } = useAppContext();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { products, addToCart, user, getProductByCustomId } = useAppContext();
-  const [activeImage, setActiveImage] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [product, setProduct] = useState(null);
-  
+
   useEffect(() => {
     const loadProduct = async () => {
       setLoading(true);
+      setError(null);
       
-      // Try to find product in the existing state first
-      let foundProduct = productId ? products.find((p) => p.id === productId) : null;
-      
-      if (!foundProduct && customId) {
-        foundProduct = products.find(p => p.customId === customId);
+      try {
+        let data;
         
-        // If not found in state, try to fetch from API
-        if (!foundProduct) {
-          try {
-            const fetchedProduct = await fetchProductByCustomId(customId);
-            if (fetchedProduct) {
-              foundProduct = fetchedProduct;
-            }
-          } catch (error) {
-            console.error("Error fetching product by customId:", error);
-            toast({
-              title: "Error",
-              description: "Product not found",
-              variant: "destructive"
-            });
-          }
+        if (productId) {
+          data = await fetchProduct(productId);
+        } else if (customId) {
+          data = await fetchProductByCustomId(customId);
+        } else {
+          throw new Error("Invalid product identifier");
         }
+        
+        if (data) {
+          setProduct(data);
+        } else {
+          throw new Error("Product not found");
+        }
+      } catch (error) {
+        console.error("Error loading product:", error);
+        setError("محصول مورد نظر یافت نشد");
+      } finally {
+        setLoading(false);
       }
-      
-      if (foundProduct) {
-        setProduct(foundProduct);
-      } else {
-        navigate("/not-found");
-      }
-      
-      setLoading(false);
     };
     
     loadProduct();
-  }, [productId, customId, products, navigate]);
-  
+  }, [productId, customId]);
+
+  const handleAddToCart = () => {
+    if (product) {
+      addToCart(product);
+    }
+  };
+
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-    </div>;
-  }
-  
-  if (!product) {
-    return null;
-  }
-  
-  const hasDiscount = product.price !== product.discountedPrice;
-  
-  // Find similar products (same category)
-  const similarProducts = products.filter(p => 
-    p.id !== product.id && p.category === product.category
-  ).slice(0, 4);
-  
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(-1)} 
-            className="mb-4"
-          >
-            <ArrowLeft className="ml-2 h-4 w-4" />
-            بازگشت
-          </Button>
-          
-          <h1 className="text-3xl font-bold">{product.name}</h1>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          <div className="space-y-4">
-            <div className="aspect-square overflow-hidden rounded-lg border">
-              <img 
-                src={product.images[activeImage] || "/placeholder.svg"} 
-                alt={product.name}
-                className="w-full h-full object-contain"
-              />
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Skeleton className="aspect-square w-full rounded-lg" />
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-3/4" />
+              <Skeleton className="h-6 w-1/4" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-10 w-40" />
             </div>
-            
-            {product.images.length > 1 && (
-              <div className="flex space-s-2 overflow-x-auto py-2 rtl">
-                {product.images.map((image, index) => (
-                  <div 
-                    key={index} 
-                    className={`w-20 h-20 rounded-md overflow-hidden cursor-pointer border-2 ${
-                      activeImage === index ? "border-primary" : "border-transparent"
-                    }`}
-                    onClick={() => setActiveImage(index)}
-                  >
-                    <img 
-                      src={image} 
-                      alt={`${product.name} ${index + 1}`}
-                      className="w-full h-full object-cover" 
-                    />
-                  </div>
-                ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h2 className="text-2xl font-bold mb-4">خطا</h2>
+        <p className="mb-8">{error || "محصول مورد نظر یافت نشد"}</p>
+        <Button variant="outline" onClick={() => navigate("/")}>
+          بازگشت به صفحه اصلی
+        </Button>
+      </div>
+    );
+  }
+
+  const hasDiscount = product.price !== product.discountedPrice;
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="aspect-square overflow-hidden rounded-lg">
+            {product.images && product.images.length > 0 ? (
+              <img
+                src={product.images[0]}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                بدون تصویر
               </div>
             )}
           </div>
-          
-          <div className="space-y-6">
-            <div className="flex flex-col space-y-1">
+
+          <div className="space-y-4">
+            <h1 className="text-3xl font-bold">{product.name}</h1>
+            <div className="flex items-center gap-2">
               {hasDiscount && (
-                <span className="line-through text-sm text-muted-foreground">
+                <span className="line-through text-gray-500">
                   {formatPrice(product.price)}
                 </span>
               )}
-              <span className="font-bold text-3xl text-primary">
+              <span className="text-primary font-bold text-lg">
                 {formatPrice(product.discountedPrice)}
               </span>
-              
-              {hasDiscount && (
-                <div className="inline-block bg-red-100 text-red-800 px-2 py-1 rounded text-sm font-medium mt-2">
-                  {Math.round((1 - product.discountedPrice / product.price) * 100)}% تخفیف
-                </div>
-              )}
             </div>
-            
-            {product.category && (
-              <div>
-                <span className="text-sm text-muted-foreground">دسته‌بندی:</span>
-                <span className="mr-2 text-sm font-medium">{product.category}</span>
-              </div>
+            <p className="text-gray-700">{product.description}</p>
+            {product.detailedDescription && (
+              <p className="text-gray-700">{product.detailedDescription}</p>
             )}
-            
-            {product.customId && (
-              <div className="text-xs flex items-center">
-                <span className="text-muted-foreground ml-1">شناسه محصول:</span>
-                <span className="font-mono">{product.customId}</span>
-              </div>
-            )}
-            
-            <Button 
-              onClick={() => addToCart(product)}
-              className="w-full lg:w-auto"
-            >
+            <Button onClick={handleAddToCart}>
               <ShoppingCart className="ml-2 h-4 w-4" />
               افزودن به سبد خرید
             </Button>
-            
-            <Tabs defaultValue="description">
-              <TabsList>
-                <TabsTrigger value="description">توضیحات</TabsTrigger>
-                {product.detailedDescription && (
-                  <TabsTrigger value="details">جزئیات بیشتر</TabsTrigger>
-                )}
-              </TabsList>
-              <TabsContent value="description" className="p-4 border rounded-md mt-2">
-                <p>{product.description}</p>
-              </TabsContent>
-              {product.detailedDescription && (
-                <TabsContent value="details" className="p-4 border rounded-md mt-2">
-                  <p>{product.detailedDescription}</p>
-                </TabsContent>
-              )}
-            </Tabs>
-            
-            <div className="text-xs text-muted-foreground">
-              تاریخ اضافه شدن: {formatDate(product.createdAt)}
-            </div>
           </div>
         </div>
-        
-        {similarProducts.length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold mb-4">محصولات مشابه</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {similarProducts.map(similarProduct => (
-                <Card key={similarProduct.id} className="overflow-hidden">
-                  <div className="aspect-[4/3] overflow-hidden">
-                    <img 
-                      src={similarProduct.images[0] || "/placeholder.svg"}
-                      alt={similarProduct.name}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold mb-2">{similarProduct.name}</h3>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-primary">
-                        {formatPrice(similarProduct.discountedPrice)}
-                      </span>
-                      <Link to={
-                          similarProduct.customId 
-                          ? `/p/${similarProduct.customId}` 
-                          : `/products/${similarProduct.id}`
-                        }>
-                        <Button variant="outline" size="sm">مشاهده</Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        <CommentSection productId={product.id} />
-      </main>
+
+        <div className="mt-12">
+          <CommentSection productId={product.id} />
+        </div>
+      </div>
     </div>
   );
 };

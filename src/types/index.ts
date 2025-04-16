@@ -17,6 +17,15 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface ShippingAddress {
+  id: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  phoneNumber: string;
+  isDefault: boolean;
+}
+
 export interface GiftCode {
   id: string;
   code: string;
@@ -95,6 +104,7 @@ export interface Purchase {
   items: CartItem[];
   total: number;
   createdAt: string;
+  shippingAddress?: ShippingAddress;
 }
 
 export interface Category {

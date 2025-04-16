@@ -17,17 +17,21 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortOption, setSortOption] = useState("newest");
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         await configureAxiosCSRF(); // Ensure CSRF token is set
         const productsData = await fetchProducts();
         console.log(productsData); // Log to check product IDs
-        setProducts(productsData);
+        setProducts(productsData || []);
       } catch (error) {
         setError((error as Error).message); // Capture any errors
         console.error("Error fetching products:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -62,7 +66,7 @@ const Index = () => {
   };
 
   // Make sure we have products before filtering
-  const filteredProducts = products.length > 0 ? sortProducts(products.filter(filterProducts)) : [];
+  const filteredProducts = products && products.length > 0 ? sortProducts(products.filter(filterProducts)) : [];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -131,27 +135,25 @@ const Index = () => {
         </div>
         
         <div id="products" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {error && <p className="text-red-500">{error}</p>}
-          {filteredProducts && filteredProducts.length > 0 ? (
+          {error && <p className="text-red-500 col-span-full">{error}</p>}
+          
+          {isLoading ? (
+            <div className="col-span-full text-center py-12">
+              <h3 className="text-xl font-medium mb-2">در حال بارگذاری...</h3>
+            </div>
+          ) : filteredProducts.length > 0 ? (
             filteredProducts.map((product: Product) => (
               <ProductCard key={product.id} product={product} />
             ))
           ) : (
             <div className="col-span-full text-center py-12">
-              <h3 className="text-xl font-medium mb-2">در حال بارگذاری...</h3>
-              {error && <p className="text-muted-foreground">{error}</p>}
+              <h3 className="text-xl font-medium mb-2">محصولی یافت نشد</h3>
+              <p className="text-muted-foreground">
+                با تغییر فیلترها یا جستجوی عبارت دیگر تلاش کنید
+              </p>
             </div>
           )}
         </div>
-        
-        {filteredProducts && filteredProducts.length === 0 && !error && (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-medium mb-2">محصولی یافت نشد</h3>
-            <p className="text-muted-foreground">
-              با تغییر فیلترها یا جستجوی عبارت دیگر تلاش کنید
-            </p>
-          </div>
-        )}
       </main>
     </div>
   );

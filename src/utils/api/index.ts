@@ -1,9 +1,10 @@
 
-// Re-export everything from all API modules
+// Re-export everything from the new modular API system
 export * from './base';
+export * from './auth';
 export * from './products';
 export * from './categories';
-export * from './comments';
-export * from './auth';
 export * from './purchases';
+export * from './comments';
 export * from './uploads';
+export * from './shipping';

@@ -1,6 +1,4 @@
 
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 import { useAppContext } from "../contexts/AppContext";
 
 const Welcome = () => {
@@ -13,9 +11,6 @@ const Welcome = () => {
         <p className="text-lg mb-8 max-w-2xl mx-auto">
           متن قابل جایگذاری
         </p>
-        <Link to="/#products">
-          <Button size="lg">مشاهده محصولات</Button>
-        </Link>
       </div>
     </div>
   );

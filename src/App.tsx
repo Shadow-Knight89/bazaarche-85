@@ -42,6 +42,7 @@ const App = () => (
                         <Route path="/register" element={<Register />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/products/:productId" element={<ProductDetail />} />
+                        <Route path="/products/custom/:customId" element={<ProductDetail />} />
                         <Route path="/p/:customId" element={<ProductDetail />} />
                         <Route path="/cart" element={<Cart />} />
                         <Route path="/change-password" element={<ChangePassword />} />

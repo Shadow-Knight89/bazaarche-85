@@ -9,7 +9,8 @@ export const fetchProducts = async () => {
     const response = await axios.get(`${API_BASE_URL}/products/`);
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    console.error('Error fetching products:', error);
+    return [];
   }
 };
 
@@ -19,20 +20,22 @@ export const fetchProduct = async (id: string) => {
     const response = await axios.get(`${API_BASE_URL}/products/${id}/`);
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    console.error('Error fetching product:', error);
+    throw error;
   }
 };
 
 // Fetch a product by customId
 export const fetchProductByCustomId = async (customId: string) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/products/?customId=${customId}`);
-    if (response.data && response.data.length > 0) {
-      return response.data[0];
+    const response = await axios.get(`${API_BASE_URL}/products/custom/${customId}/`);
+    if (response.data) {
+      return response.data;
     }
     throw new Error('Product not found');
   } catch (error) {
-    return handleApiError(error);
+    console.error('Error fetching product by custom ID:', error);
+    throw error;
   }
 };
 

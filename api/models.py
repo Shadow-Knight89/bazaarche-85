@@ -22,10 +22,23 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+class ShippingAddress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="shipping_addresses")
+    address = models.TextField()
+    city = models.CharField(max_length=100)
+    postalCode = models.CharField(max_length=20)
+    phoneNumber = models.CharField(max_length=20)
+    isDefault = models.BooleanField(default=False)
+    createdAt = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s address - {self.address[:20]}"
+
 class Purchase(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     total = models.DecimalField(max_digits=10, decimal_places=2)
     createdAt = models.DateTimeField(auto_now_add=True)
+    shippingAddress = models.ForeignKey(ShippingAddress, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"Purchase #{self.id} by {self.user.username}"

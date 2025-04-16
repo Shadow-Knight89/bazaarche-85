@@ -2,75 +2,44 @@
 import axios from 'axios';
 import { toast } from '@/components/ui/use-toast';
 
-// Django backend URL - make sure this matches your Django server's address
-export const API_BASE_URL = 'http://localhost:8000/api'; 
+// Define API base URL
+export const API_BASE_URL = 'http://localhost:8000/api';
 
-// Configure axios to include credentials for handling sessions
-axios.defaults.withCredentials = true;
-
-// API error handler
-export const handleApiError = (error: any) => {
-  console.error('API Error:', error);
-  
-  let errorMessage = 'An error occurred';
-  if (error.response) {
-    errorMessage = error.response.data?.detail || 
-                  (typeof error.response.data === 'string' ? error.response.data : 'Server error');
-    
-    // Check for validation errors (usually as an object)
-    if (typeof error.response.data === 'object' && !error.response.data.detail) {
-      errorMessage = Object.entries(error.response.data)
-        .map(([key, value]) => `${key}: ${value}`)
-        .join(', ');
-    }
-    
-    // Don't show authentication error toast when it's just a 403 from normal operations
-    if (error.response.status === 403 && 
-        error.response.data?.detail === "Authentication credentials were not provided." &&
-        window.location.pathname.includes('/admin')) {
-      // Skip showing toast for admin authentication errors
-      return Promise.reject(error);
-    }
-  } else if (error.request) {
-    errorMessage = 'No response from server';
-  } else {
-    errorMessage = error.message;
-  }
-  
-  toast({
-    title: "Error",
-    description: errorMessage,
-    variant: "destructive",
-  });
-  
-  return Promise.reject(error);
-};
-
-// Get CSRF token handling for Django
-export const getCSRFToken = async () => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/csrf/`);
-    return document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrftoken='))
-        ?.split('=')[1];
-  } catch (error) {
-    console.error('Error fetching CSRF token:', error);
-    return null;
-  }
-};
-
-// Configure axios to include the CSRF token in requests
+// Configure axios with CSRF token
 export const configureAxiosCSRF = async () => {
   try {
-    const csrfToken = await getCSRFToken();
-    if (csrfToken) {
-      axios.defaults.headers.common['X-CSRFToken'] = csrfToken;
-      return true;
-    }
-    return false;
+    // Get CSRF token
+    await axios.get(`${API_BASE_URL}/csrf/`, { withCredentials: true });
+    return true;
   } catch (error) {
-    console.error('Error configuring CSRF token:', error);
+    console.error('Error getting CSRF token:', error);
     return false;
   }
+};
+
+// Handle API errors
+export const handleApiError = (error: any) => {
+  const errorMessage = error?.response?.data?.detail || error?.message || 'An unknown error occurred';
+  
+  // Don't show toast for authentication errors when loading resources
+  // This avoids the annoying "Authentication credentials were not provided" message
+  // when just fetching data that doesn't require authentication
+  if (
+    error?.response?.status === 403 && 
+    errorMessage.includes('Authentication credentials were not provided') &&
+    (error?.config?.method === 'get' || !error?.config?.method)
+  ) {
+    console.log('Authentication required for this endpoint, but not showing toast');
+    return null;
+  }
+  
+  console.error('API Error:', error);
+  
+  toast({
+    title: 'Error',
+    description: errorMessage,
+    variant: 'destructive',
+  });
+  
+  throw error;
 };

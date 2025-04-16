@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { API_BASE_URL, handleApiError, configureAxiosCSRF } from './base';
 
-// Upload an image
+// Upload an image to a folder in the backend
 export const uploadImage = async (formData: FormData) => {
   try {
     await configureAxiosCSRF();

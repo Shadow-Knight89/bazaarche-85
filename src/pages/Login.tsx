@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +16,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { login, checkLoginRateLimit, resetCart } = useAppContext();
 
-  // Initialize CSRF token on component mount
+  // Initialize CSRF token on component mount - only once
   useEffect(() => {
     const initCSRF = async () => {
       await configureAxiosCSRF();

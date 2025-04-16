@@ -13,32 +13,40 @@ interface ProductListProps {
 const ProductList: React.FC<ProductListProps> = ({ categories = [] }) => {
     const [filters, setFilters] = useState<FilterValues>({});
     const [currentPage, setCurrentPage] = useState(1);
+    const [csrfInitialized, setCsrfInitialized] = useState(false);
     
-    // Initialize CSRF before fetching data
+    // Initialize CSRF before fetching data - only once
     useEffect(() => {
         const initCSRF = async () => {
-            console.log('ProductList - Initializing CSRF');
-            try {
-                await configureAxiosCSRF();
-                console.log('ProductList - CSRF initialized successfully');
-            } catch (err) {
-                console.error('ProductList - CSRF initialization error:', err);
+            if (!csrfInitialized) {
+                console.log('ProductList - Initializing CSRF');
+                try {
+                    await configureAxiosCSRF();
+                    console.log('ProductList - CSRF initialized successfully');
+                    setCsrfInitialized(true);
+                } catch (err) {
+                    console.error('ProductList - CSRF initialization error:', err);
+                }
             }
         };
         
         initCSRF();
-    }, []);
+    }, [csrfInitialized]);
     
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['products', filters, currentPage],
         queryFn: async () => {
             console.log('ProductList - Fetching products with params:', { filters, currentPage });
-            await configureAxiosCSRF(); // Ensure CSRF token is set
+            // Only call configureAxiosCSRF if not already initialized
+            if (!csrfInitialized) {
+                await configureAxiosCSRF();
+            }
             return fetchProducts({
                 ...filters,
                 page: currentPage
             });
-        }
+        },
+        enabled: csrfInitialized, // Only run query when CSRF is initialized
     });
     
     useEffect(() => {

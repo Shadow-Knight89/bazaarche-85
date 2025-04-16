@@ -8,13 +8,26 @@ export const API_BASE_URL = process.env.NODE_ENV === 'production'
 
 // Flag to track if we've already configured CSRF
 let csrfConfigured = false;
+// Promise to track ongoing CSRF configuration
+let csrfPromise: Promise<boolean> | null = null;
 
 // Configure axios for CSRF protection
 export const configureAxiosCSRF = async () => {
   try {
+    // If already configured, return immediately
+    if (csrfConfigured) {
+      return true;
+    }
+    
+    // If a configuration is already in progress, return the existing promise
+    if (csrfPromise) {
+      return csrfPromise;
+    }
+    
     console.log('Configuring CSRF protection, current status:', { csrfConfigured });
     
-    if (!csrfConfigured) {
+    // Create a new promise for the configuration
+    csrfPromise = (async () => {
       // Enable sending cookies with cross-domain requests
       axios.defaults.withCredentials = true;
       
@@ -25,8 +38,16 @@ export const configureAxiosCSRF = async () => {
       console.log('CSRF token response:', response.data);
       
       csrfConfigured = true;
-    }
-    return true;
+      return true;
+    })();
+    
+    // Wait for the promise to resolve
+    const result = await csrfPromise;
+    
+    // Reset the promise after it's done
+    csrfPromise = null;
+    
+    return result;
   } catch (error) {
     console.error('Error configuring CSRF:', error);
     if (axios.isAxiosError(error)) {
@@ -36,6 +57,9 @@ export const configureAxiosCSRF = async () => {
         data: error.response?.data,
       });
     }
+    
+    // Reset the promise on error
+    csrfPromise = null;
     return false;
   }
 };

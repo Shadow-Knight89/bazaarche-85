@@ -10,6 +10,7 @@ import { Product } from "../types";
 import { fetchProduct, fetchProductByCustomId } from "../utils/api";
 import { toast } from "@/components/ui/use-toast";
 import CommentSection from "../components/CommentSection";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 const ProductDetail = () => {
   const { productId, customId } = useParams();
@@ -113,21 +114,23 @@ const ProductDetail = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
-          <div className="aspect-square bg-white p-4 border rounded-md">
-            <img 
-              src={activeImage || product.images[0]} 
-              alt={product.name} 
-              className="w-full h-full object-contain"
-            />
-          </div>
+          <Card className="overflow-hidden border rounded-md">
+            <AspectRatio ratio={1} className="bg-white">
+              <img 
+                src={activeImage || (product.images && product.images[0])} 
+                alt={product.name} 
+                className="w-full h-full object-contain"
+              />
+            </AspectRatio>
+          </Card>
           
-          {product.images.length > 1 && (
+          {product.images && product.images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-2">
               {product.images.map((image, index) => (
                 <button 
                   key={index}
                   onClick={() => setActiveImage(image)}
-                  className={`w-24 h-24 border rounded-md p-1 ${activeImage === image ? 'border-primary' : ''}`}
+                  className={`w-16 h-16 border rounded-md p-1 ${activeImage === image ? 'border-primary' : ''}`}
                 >
                   <img 
                     src={image} 

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAppContext } from "../contexts/AppContext";
 import { Comment as CommentType } from "../types";
 import CommentForm from "./comment/CommentForm";
@@ -12,6 +12,16 @@ interface CommentSectionProps {
 const CommentSection = ({ productId }: CommentSectionProps) => {
   const { user, addComment, addReply, getCommentsForProduct } = useAppContext();
   const [comments, setComments] = useState<CommentType[]>([]);
+  const intervalRef = useRef<number | null>(null);
+  
+  // Clear interval on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
   
   // Fetch comments when component mounts or productId changes
   useEffect(() => {
@@ -19,14 +29,23 @@ const CommentSection = ({ productId }: CommentSectionProps) => {
     const initialComments = getCommentsForProduct(productId);
     setComments(initialComments);
     
-    // Set up an interval to periodically refresh comments
-    const intervalId = setInterval(() => {
+    // Set up an interval to periodically refresh comments - but not too frequently
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
+    intervalRef.current = window.setInterval(() => {
       const refreshedComments = getCommentsForProduct(productId);
       setComments(refreshedComments);
-    }, 5000); // Refresh every 5 seconds
+    }, 30000); // Refresh every 30 seconds instead of 5 seconds
     
-    // Cleanup on unmount
-    return () => clearInterval(intervalId);
+    // Cleanup on unmount or when productId changes
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [productId, getCommentsForProduct]);
 
   const handleAddComment = (commentText: string) => {

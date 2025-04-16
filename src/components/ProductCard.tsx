@@ -6,6 +6,7 @@ import { useAppContext } from "../contexts/AppContext";
 import { formatPrice } from "../utils/formatters";
 import { ShoppingCart, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
+import { AspectRatio } from "./ui/aspect-ratio";
 
 interface ProductCardProps {
   product: Product;
@@ -24,7 +25,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
     <Card className="product-card overflow-hidden">
       <CardHeader className="p-0 relative">
         <Link to={productUrl}>
-          <div className="aspect-[4/3] overflow-hidden">
+          <AspectRatio ratio={4/3} className="overflow-hidden">
             {product.images && product.images.length > 0 ? (
               <img 
                 src={product.images[0]} 
@@ -33,10 +34,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
               />
             ) : (
               <div className="w-full h-full bg-muted flex items-center justify-center">
-                بدون تصویر
+                <span className="text-muted-foreground text-sm">بدون تصویر</span>
               </div>
             )}
-          </div>
+          </AspectRatio>
         </Link>
 
         {hasDiscount && (

@@ -11,7 +11,7 @@ const StoreContext = createContext<StoreContextType>({} as StoreContextType);
 export const useStoreContext = () => useContext(StoreContext);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [storeName, setStoreName] = useState<string>("فروشگاه آنلاین");
+  const [storeName, setStoreName] = useState<string>("بازارچه آنلاین دبیرستان شهید بهشتی");
 
   const value = {
     storeName,

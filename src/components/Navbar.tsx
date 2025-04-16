@@ -21,7 +21,7 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 bg-white shadow-sm border-b">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold text-primary">فروشگاه آنلاین</Link>
+          <Link to="/" className="text-2xl font-bold text-primary">صفحه اصلی</Link>
           
           <div className="flex items-center gap-4">
             <Link to="/cart" className="relative">

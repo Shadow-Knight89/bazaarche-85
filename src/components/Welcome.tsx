@@ -11,7 +11,7 @@ const Welcome = () => {
       <div className="container mx-auto px-4 text-center">
         <h1 className="text-4xl font-bold mb-4">{storeName}</h1>
         <p className="text-lg mb-8 max-w-2xl mx-auto">
-          با انواع محصولات با کیفیت و قیمت مناسب، خرید آنلاین را تجربه کنید
+          متن قابل جایگذاری
         </p>
         <Link to="/#products">
           <Button size="lg">مشاهده محصولات</Button>

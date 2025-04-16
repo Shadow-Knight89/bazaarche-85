@@ -12,7 +12,7 @@ const Header = () => {
           <h1 className="text-xl font-bold">
             <Link to="/">{storeName}</Link>
           </h1>
-          <div className="text-sm">خوش آمدید!</div>
+          <div className="text-sm">به بازارچه آنلاین دبیرستان شهید بهشتی خوش آمدید!</div>
         </div>
       </div>
     </header>

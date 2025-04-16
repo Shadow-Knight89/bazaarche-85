@@ -1,8 +1,7 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { fetchProducts, configureAxiosCSRF } from '../utils/api';
 import ProductCard from './ProductCard';
-import { Product } from '../types';
 import ProductFilters, { FilterValues } from './ProductFilters';
 import { useQuery } from '@tanstack/react-query';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
@@ -30,7 +29,7 @@ const ProductList: React.FC<ProductListProps> = ({ categories = [] }) => {
     });
     
     // Ensure products is always an array
-    const products = Array.isArray(data?.results) ? data.results : [];
+    const products = data && data.results ? Array.isArray(data.results) ? data.results : [] : [];
     const totalPages = data?.count ? Math.ceil(data.count / 12) : 0; // Assuming 12 products per page
     
     const handleFilterChange = (newFilters: FilterValues) => {

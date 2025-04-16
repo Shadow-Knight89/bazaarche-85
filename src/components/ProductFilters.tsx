@@ -41,7 +41,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   };
 
   const handleCategoryChange = (value: string) => {
-    const newFilters = { ...filters, category: value };
+    const newFilters = { ...filters, category: value === "all" ? undefined : value };
     setFilters(newFilters);
     onFilterChange(newFilters);
   };
@@ -54,7 +54,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   };
 
   const handleSortChange = (value: string) => {
-    const newFilters = { ...filters, sort: value };
+    const newFilters = { ...filters, sort: value === "default" ? undefined : value };
     setFilters(newFilters);
     onFilterChange(newFilters);
   };
@@ -98,7 +98,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
 
             {/* Category filter */}
             <Select
-              value={filters.category || ''}
+              value={filters.category || 'all'}
               onValueChange={handleCategoryChange}
             >
               <SelectTrigger>
@@ -116,7 +116,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
 
             {/* Sort options */}
             <Select 
-              value={filters.sort || ''}
+              value={filters.sort || 'default'}
               onValueChange={handleSortChange}
             >
               <SelectTrigger>

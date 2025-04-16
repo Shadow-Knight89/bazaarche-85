@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { API_BASE_URL, handleApiError, configureAxiosCSRF } from './base';
 import { toast } from '@/components/ui/use-toast';
@@ -73,16 +74,21 @@ export const fetchProductByCustomId = async (customId: string) => {
     });
     
     // If we got results, return the first one
-    if (response.data && response.data.length > 0) {
+    if (response.data && Array.isArray(response.data.results) && response.data.results.length > 0) {
+      return response.data.results[0];
+    } else if (response.data && Array.isArray(response.data) && response.data.length > 0) {
       return response.data[0];
     }
     
     // If no results by customId parameter, fetch all products and filter manually
-    const allProducts = await fetchProducts();
-    const product = allProducts.find((p: any) => p.customId === customId);
+    const allProductsResponse = await fetchProducts();
+    const allProducts = allProductsResponse.results;
     
-    if (product) {
-      return product;
+    if (Array.isArray(allProducts)) {
+      const product = allProducts.find((p: any) => p.customId === customId);
+      if (product) {
+        return product;
+      }
     }
     
     throw new Error('Product not found');

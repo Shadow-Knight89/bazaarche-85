@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import Navbar from '../components/Navbar';
 import Welcome from '../components/Welcome';
 import ProductList from '../components/ProductList';
@@ -11,19 +11,19 @@ const Index = () => {
   const { storeName } = useAppContext();
   
   // Fetch categories using React Query
-  const { data: categories, isLoading: categoriesLoading } = useQuery({
+  const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories
   });
   
   // Make sure categories is always an array
-  const safeCategories = Array.isArray(categories) ? categories : [];
+  const categories = Array.isArray(categoriesData) ? categoriesData : [];
 
   return (
     <div className="container mx-auto px-4 pb-8">
       <Navbar />
       <Welcome />
-      <ProductList categories={safeCategories} />
+      <ProductList categories={categories} />
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import { Button } from "./ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Product } from "../types";
@@ -13,11 +14,16 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart } = useAppContext();
   const hasDiscount = product.price !== product.discountedPrice;
+  
+  // Use customId if available, otherwise use id
+  const productUrl = product.customId ? 
+    `/p/${product.customId}` : 
+    `/products/${product.id}`;
 
   return (
     <Card className="product-card overflow-hidden">
       <CardHeader className="p-0 relative">
-        <Link to={`/products/${product.id}`}>
+        <Link to={productUrl}>
           <div className="aspect-[4/3] overflow-hidden">
             {product.images && product.images.length > 0 ? (
               <img 
@@ -41,7 +47,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
       </CardHeader>
 
       <CardContent className="p-4">
-        <Link to={`/products/${product.id}`}>
+        <Link to={productUrl}>
           <CardTitle className="text-lg mb-2 line-clamp-1 hover:text-primary transition-colors">
             {product.name}
           </CardTitle>
@@ -71,9 +77,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
             className="w-1/2"
             asChild
           >
-            <Link to={`/products/${product.id}`}>
+            <Link to={productUrl}>
               <Eye className="ml-2 h-4 w-4" />
-              مشاهده
+              جزئیات
             </Link>
           </Button>
           <Button 

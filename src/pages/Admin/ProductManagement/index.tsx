@@ -1,88 +1,142 @@
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../../contexts/AppContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Product } from "../../../types";
-import { AlertCircle } from "lucide-react";
-import { fetchProducts, configureAxiosCSRF } from "../../../utils/api";
+import { toast } from "@/components/ui/use-toast";
 import ProductForm from "./ProductForm";
 import ProductList from "./ProductList";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { removeProduct } from "../../../utils/api/products";
 
-const ProductManagement = () => {
-  const { user } = useAppContext();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+const ProductManagement: React.FC = () => {
+  const { products, categories } = useAppContext();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTab, setSelectedTab] = useState("list");
+  const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load products on component mount
   useEffect(() => {
-    loadProducts();
-  }, []);
+    if (productToEdit) {
+      setSelectedTab("add");
+    }
+  }, [productToEdit]);
 
-  // Function to load products
-  const loadProducts = async () => {
-    setIsLoading(true);
-    setError(null);
-    
+  const handleEditProduct = (product: Product) => {
+    setProductToEdit(product);
+  };
+
+  const handleDeleteProduct = (productId: string) => {
+    setProductToDelete(productId);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!productToDelete) return;
+
+    setIsDeleting(true);
     try {
-      // Configure CSRF token first
-      await configureAxiosCSRF();
-      
-      // Then fetch products
-      const productsData = await fetchProducts();
-      setProducts(Array.isArray(productsData) ? productsData : []);
+      await removeProduct(productToDelete);
+      toast({
+        title: "محصول حذف شد",
+        description: "محصول با موفقیت حذف شد",
+      });
+      // The product will be removed from the products list in the context
     } catch (error) {
-      console.error('Error loading products:', error);
-      setError('خطا در بارگذاری محصولات. لطفا مجدد تلاش کنید.');
+      console.error("Error deleting product:", error);
+      toast({
+        title: "خطا",
+        description: "مشکلی در حذف محصول به وجود آمد",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false);
+      setIsDeleting(false);
+      setProductToDelete(null);
     }
   };
 
-  const handleProductSaved = (product: Product) => {
-    if (editingProduct) {
-      // Update existing product in the list
-      setProducts(prevProducts => 
-        prevProducts.map(p => p.id === product.id ? product : p)
-      );
-      setEditingProduct(null);
-    } else {
-      // Add new product to the list
-      setProducts(prevProducts => [...prevProducts, product]);
-    }
+  const handleProductSaved = () => {
+    setSelectedTab("list");
+    setProductToEdit(null);
   };
 
-  // Check if user is not logged in or not an admin
-  if (!user || !user.isAdmin) {
-    return (
-      <div className="text-center py-12">
-        <AlertCircle className="mx-auto h-12 w-12 mb-4 text-gray-400" />
-        <h3 className="text-xl font-medium mb-2">دسترسی محدود شده</h3>
-        <p className="text-muted-foreground">
-          شما اجازه دسترسی به این بخش را ندارید
-        </p>
-      </div>
-    );
-  }
+  const filteredProducts = products?.filter((product) =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleAddNewClick = () => {
+    setProductToEdit(null);
+    setSelectedTab("add");
+  };
 
   return (
-    <div className="space-y-8">
-      <ProductForm 
-        product={editingProduct || undefined} 
-        onSuccess={handleProductSaved}
-        onCancel={editingProduct ? () => setEditingProduct(null) : undefined}
-      />
-
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-6">لیست محصولات</h2>
-        <ProductList 
-          products={products}
-          loading={isLoading}
-          error={error}
-          onRefresh={loadProducts}
-          onEdit={setEditingProduct}
-        />
+    <div className="container mx-auto py-8">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">مدیریت محصولات</h1>
+          <p className="text-muted-foreground mt-2">
+            افزودن، ویرایش و حذف محصولات فروشگاه
+          </p>
+        </div>
+        <Button onClick={handleAddNewClick} className="mt-4 md:mt-0">
+          افزودن محصول جدید
+        </Button>
       </div>
+
+      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="list">لیست محصولات</TabsTrigger>
+          <TabsTrigger value="add">
+            {productToEdit ? "ویرایش محصول" : "افزودن محصول"}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list" className="space-y-6">
+          <div className="flex items-center mb-6">
+            <Input
+              placeholder="جستجو در محصولات..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-md"
+            />
+          </div>
+
+          <ProductList
+            onEditProduct={handleEditProduct}
+            onDeleteProduct={handleDeleteProduct}
+          />
+        </TabsContent>
+
+        <TabsContent value="add">
+          <ProductForm
+            productToEdit={productToEdit}
+            onProductSaved={handleProductSaved}
+          />
+        </TabsContent>
+      </Tabs>
+
+      <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>آیا از حذف این محصول مطمئن هستید؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              این عملیات غیرقابل بازگشت است. محصول از سیستم حذف خواهد شد.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>انصراف</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteProduct}
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? "در حال حذف..." : "بله، حذف شود"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

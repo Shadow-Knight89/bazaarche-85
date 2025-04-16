@@ -1,6 +1,6 @@
 
 from rest_framework import viewsets, status, filters
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from django.contrib.auth import login, logout, authenticate
@@ -8,11 +8,16 @@ from django.contrib.auth.models import User
 from django.middleware.csrf import get_token
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
+import os
+from django.conf import settings
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 
-from .models import Product, Category, Comment, Purchase, PurchaseItem
+from .models import Product, Category, Comment, Purchase, PurchaseItem, ShippingAddress
 from .serializers import (
     ProductSerializer, CategorySerializer, UserSerializer, 
-    CommentSerializer, PurchaseSerializer, PurchaseItemSerializer
+    CommentSerializer, PurchaseSerializer, PurchaseItemSerializer,
+    ShippingAddressSerializer
 )
 
 @api_view(['GET'])
@@ -98,6 +103,36 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+class ShippingAddressViewSet(viewsets.ModelViewSet):
+    queryset = ShippingAddress.objects.all()
+    serializer_class = ShippingAddressSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        # Filter shipping addresses to only show the user's own addresses
+        return ShippingAddress.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_default_shipping_address(request, pk):
+    try:
+        # Get the shipping address
+        address = ShippingAddress.objects.get(pk=pk, user=request.user)
+        
+        # Unset current default address
+        ShippingAddress.objects.filter(user=request.user, isDefault=True).update(isDefault=False)
+        
+        # Set new default address
+        address.isDefault = True
+        address.save()
+        
+        return Response({'detail': 'Default address set successfully'})
+    except ShippingAddress.DoesNotExist:
+        return Response({'detail': 'Address not found'}, status=status.HTTP_404_NOT_FOUND)
+
 class PurchaseViewSet(viewsets.ModelViewSet):
     queryset = Purchase.objects.all().prefetch_related('items', 'items__product', 'user')
     serializer_class = PurchaseSerializer
@@ -125,9 +160,10 @@ class PurchaseViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         items_data = request.data.get('items', [])
         total = request.data.get('total', 0)
+        shipping_address_id = request.data.get('shippingAddressId')
         
         serializer = self.get_serializer(
-            data={'total': total},
+            data={'total': total, 'shippingAddressId': shipping_address_id},
             context={'request': request, 'items': items_data}
         )
         
@@ -152,8 +188,19 @@ def upload_image(request):
     
     file = request.FILES['file']
     
-    # TODO: Implement actual file storage, for now, let's just return a mock URL
-    # In a real implementation, you'd save the file to a storage service like AWS S3
-    # and return the actual URL
+    # Create media directory if it doesn't exist
+    media_root = getattr(settings, 'MEDIA_ROOT', os.path.join(settings.BASE_DIR, 'media'))
+    upload_dir = os.path.join(media_root, 'uploads')
     
-    return Response({'url': f'https://example.com/images/{file.name}'})
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+    
+    # Save the file
+    file_path = os.path.join('uploads', file.name)
+    path = default_storage.save(file_path, ContentFile(file.read()))
+    
+    # Return the URL
+    media_url = getattr(settings, 'MEDIA_URL', '/media/')
+    file_url = f"{request.build_absolute_uri('/')[:-1]}{media_url}{path}"
+    
+    return Response({'url': file_url})

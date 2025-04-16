@@ -2,44 +2,55 @@
 import axios from 'axios';
 import { toast } from '@/components/ui/use-toast';
 
-// Define API base URL
-export const API_BASE_URL = 'http://localhost:8000/api';
+export const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '/api' 
+  : 'http://localhost:8000/api';
 
-// Configure axios with CSRF token
+// Flag to track if we've already configured CSRF
+let csrfConfigured = false;
+
+// Configure axios for CSRF protection
 export const configureAxiosCSRF = async () => {
   try {
-    // Get CSRF token
-    await axios.get(`${API_BASE_URL}/csrf/`, { withCredentials: true });
+    if (!csrfConfigured) {
+      // Enable sending cookies with cross-domain requests
+      axios.defaults.withCredentials = true;
+      
+      // Get CSRF token from server and set in cookies
+      await axios.get(`${API_BASE_URL}/csrf/`);
+      
+      csrfConfigured = true;
+    }
     return true;
   } catch (error) {
-    console.error('Error getting CSRF token:', error);
+    console.error('Error configuring CSRF:', error);
     return false;
   }
 };
 
-// Handle API errors
+// Handle API errors with consistent error messages
 export const handleApiError = (error: any) => {
-  const errorMessage = error?.response?.data?.detail || error?.message || 'An unknown error occurred';
-  
-  // Don't show toast for authentication errors when loading resources
-  // This avoids the annoying "Authentication credentials were not provided" message
-  // when just fetching data that doesn't require authentication
-  if (
-    error?.response?.status === 403 && 
-    errorMessage.includes('Authentication credentials were not provided') &&
-    (error?.config?.method === 'get' || !error?.config?.method)
-  ) {
-    console.log('Authentication required for this endpoint, but not showing toast');
-    return null;
-  }
-  
   console.error('API Error:', error);
   
+  let errorMessage = 'خطایی رخ داد. لطفا دوباره تلاش کنید.';
+  
+  if (error?.response?.data?.detail) {
+    errorMessage = error.response.data.detail;
+    
+    // Don't show the "Authentication credentials were not provided" message to users
+    if (errorMessage === "Authentication credentials were not provided.") {
+      console.warn("Authentication error - suppressed from UI");
+      return Promise.reject(error);
+    }
+  } else if (error?.message) {
+    errorMessage = error.message;
+  }
+  
   toast({
-    title: 'Error',
+    title: "خطا",
     description: errorMessage,
-    variant: 'destructive',
+    variant: "destructive",
   });
   
-  throw error;
+  return Promise.reject(error);
 };

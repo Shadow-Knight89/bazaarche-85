@@ -1,143 +1,100 @@
 
-import { useState } from "react";
+import React from "react";
+import { useAppContext } from "../../../contexts/AppContext";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { formatPrice } from "../../../utils/formatters";
+import { Pencil, Trash2 } from "lucide-react";
 import { Product } from "../../../types";
-import { AlertCircle, Pencil, Trash2 } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatPrice, formatDate } from "../../../utils/formatters";
-import { removeProduct, configureAxiosCSRF } from "../../../utils/api";
-import { toast } from "@/components/ui/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface ProductListProps {
-  products: Product[];
-  loading: boolean;
-  error: string | null;
-  onRefresh: () => void;
-  onEdit: (product: Product) => void;
+  onEditProduct: (product: Product) => void;
+  onDeleteProduct: (productId: string) => void;
 }
 
-const ProductList = ({ products, loading, error, onRefresh, onEdit }: ProductListProps) => {
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+const ProductList: React.FC<ProductListProps> = ({ onEditProduct, onDeleteProduct }) => {
+  const { products, categories } = useAppContext();
 
-  const handleRemoveProduct = async (productId: string | number) => {
-    try {
-      setDeletingId(productId.toString());
-      
-      // First ensure CSRF token is set
-      await configureAxiosCSRF();
-      
-      const result = await removeProduct(productId.toString());
-      
-      if (result) {
-        toast({
-          title: "محصول حذف شد",
-          description: "محصول با موفقیت حذف شد",
-        });
-        
-        onRefresh();
-      }
-    } catch (error) {
-      console.error("Error removing product:", error);
-      toast({
-        title: "خطا",
-        description: "خطایی در حذف محصول رخ داد",
-        variant: "destructive",
-      });
-    } finally {
-      setDeletingId(null);
-    }
+  const getCategoryName = (categoryId: string | undefined) => {
+    if (!categoryId) return "بدون دسته‌بندی";
+    const category = categories?.find((c) => c.id === categoryId);
+    return category ? category.name : "بدون دسته‌بندی";
   };
 
-  if (loading) {
+  if (!products || products.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        <AlertCircle className="mx-auto h-12 w-12 mb-4 text-gray-400 animate-pulse" />
-        <p>در حال بارگذاری محصولات...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-8 text-red-500">
-        <AlertCircle className="mx-auto h-12 w-12 mb-4 text-red-400" />
-        <p>{error}</p>
-        <Button 
-          className="mt-4" 
-          variant="outline" 
-          onClick={onRefresh}
-        >
-          تلاش مجدد
-        </Button>
-      </div>
-    );
-  }
-
-  if (products.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        <AlertCircle className="mx-auto h-12 w-12 mb-4 text-gray-400" />
-        <p>هیچ محصولی یافت نشد</p>
-      </div>
+      <Alert>
+        <AlertTitle>محصولی یافت نشد</AlertTitle>
+        <AlertDescription>
+          هیچ محصولی در سیستم ثبت نشده است. با استفاده از فرم زیر، محصول جدید
+          اضافه کنید.
+        </AlertDescription>
+      </Alert>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>تصویر</TableHead>
-            <TableHead>نام محصول</TableHead>
-            <TableHead>دسته‌بندی</TableHead>
-            <TableHead>قیمت</TableHead>
-            <TableHead>قیمت با تخفیف</TableHead>
-            <TableHead>تاریخ ایجاد</TableHead>
-            <TableHead>عملیات</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {products.map((product) => (
-            <TableRow key={product.id}>
-              <TableCell>
-                <img 
-                  src={product.images && product.images[0] ? product.images[0] : '/placeholder.svg'} 
-                  alt={product.name} 
-                  className="w-12 h-12 object-cover rounded-md" 
-                />
-              </TableCell>
-              <TableCell className="font-medium">{product.name}</TableCell>
-              <TableCell>{product.category || 'بدون دسته‌بندی'}</TableCell>
-              <TableCell>{formatPrice(product.price)}</TableCell>
-              <TableCell>
-                {product.discountedPrice && product.discountedPrice < product.price 
-                  ? formatPrice(product.discountedPrice) 
-                  : 'بدون تخفیف'}
-              </TableCell>
-              <TableCell>{formatDate(product.createdAt)}</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => onEdit(product)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => handleRemoveProduct(product.id)}
-                    disabled={deletingId === product.id}
-                  >
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
+    <div className="space-y-4">
+      {products.map((product) => (
+        <Card key={product.id} className="overflow-hidden">
+          <CardContent className="p-0">
+            <div className="flex flex-col md:flex-row">
+              {product.images && product.images.length > 0 ? (
+                <div className="w-full md:w-24 h-24">
+                  <img
+                    src={product.images[0]}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              ) : (
+                <div className="w-full md:w-24 h-24 bg-muted flex items-center justify-center text-muted-foreground">
+                  بدون تصویر
+                </div>
+              )}
+              <div className="flex-1 p-4 flex flex-col md:flex-row items-start md:items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-lg">{product.name}</h3>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    {getCategoryName(product.category)}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end mt-4 md:mt-0">
+                  <div className="flex items-center gap-2">
+                    {product.price !== product.discountedPrice && (
+                      <span className="text-sm line-through text-muted-foreground">
+                        {formatPrice(product.price)}
+                      </span>
+                    )}
+                    <span className="font-bold">
+                      {formatPrice(product.discountedPrice)}
+                    </span>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEditProduct(product)}
+                    >
+                      <Pencil className="h-4 w-4 mr-1" />
+                      ویرایش
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => onDeleteProduct(product.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      حذف
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };

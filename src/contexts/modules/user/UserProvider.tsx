@@ -1,9 +1,14 @@
+
 import React, { useState, useEffect } from "react";
-import { UserContext } from "./UserContext";
 import { User, SecurityQuestion, LoginAttempt } from "../../../types";
 import { toast } from "@/components/ui/use-toast";
-import { authService } from "../../../services/authService";
+import { 
+  loginUser as apiLoginUser, 
+  logoutUser as apiLogoutUser, 
+  registerUser as apiRegisterUser 
+} from "../../../utils/api";
 import { configureAxiosCSRF } from "../../../utils/api/base";
+import { UserContext, UserContextType } from "./UserContext";
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<User[]>([
@@ -54,9 +59,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const loggedInUser = await authService.login(username, password);
+      // Configure CSRF token before making login request
+      await configureAxiosCSRF();
       
-      if (loggedInUser) {
+      const userData = await apiLoginUser(username, password);
+      
+      if (userData) {
+        const loggedInUser: User = {
+          id: userData.id.toString(),
+          username: userData.username,
+          password: '',
+          isAdmin: username === 'admin',
+          canComment: true
+        };
+        
         setUser(loggedInUser);
         
         setLoginAttempts(prev => 
@@ -97,9 +113,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const register = async (username: string, password: string, securityQuestion: SecurityQuestion): Promise<boolean> => {
     try {
-      const newUser = await authService.register(username, password, securityQuestion);
+      const userData = await apiRegisterUser({
+        username,
+        password,
+      });
       
-      if (newUser) {
+      if (userData) {
+        const newUser: User = {
+          id: userData.id.toString(),
+          username: userData.username,
+          password: '',
+          isAdmin: false,
+          securityQuestion,
+          canComment: true
+        };
+        
         setUsers(prev => [...prev, newUser]);
         
         toast({
@@ -119,7 +147,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const logout = async () => {
     try {
-      await authService.logout();
+      // Configure CSRF token before making logout request
+      await configureAxiosCSRF();
+      await apiLogoutUser();
     } catch (error) {
       console.error('Error during logout:', error);
     } finally {
@@ -301,7 +331,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const value = {
+  const value: UserContextType = {
     user,
     users,
     login,

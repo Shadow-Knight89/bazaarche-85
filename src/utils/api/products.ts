@@ -1,18 +1,52 @@
-
 import axios from 'axios';
 import { API_BASE_URL, handleApiError, configureAxiosCSRF } from './base';
 import { toast } from '@/components/ui/use-toast';
+import { FilterValues } from '@/components/ProductFilters';
+
+interface FetchProductsParams extends FilterValues {
+  page?: number;
+}
 
 // Fetch all products
-export const fetchProducts = async () => {
+export const fetchProducts = async (params?: FetchProductsParams) => {
   try {
     await configureAxiosCSRF();
-    const response = await axios.get(`${API_BASE_URL}/products/`);
-    // Ensure we always return an array
-    return Array.isArray(response.data) ? response.data : [];
+    
+    // Prepare query parameters
+    const queryParams: any = {};
+    
+    if (params) {
+      if (params.search) queryParams.search = params.search;
+      if (params.category) queryParams.category = params.category;
+      if (params.minPrice) queryParams.min_price = params.minPrice;
+      if (params.maxPrice) queryParams.max_price = params.maxPrice;
+      if (params.page) queryParams.page = params.page;
+      
+      // Handle sorting
+      if (params.sort) {
+        const [field, direction] = params.sort.split('_');
+        
+        if (field === 'name') {
+          queryParams.ordering = direction === 'asc' ? 'name' : '-name';
+        } else if (field === 'price') {
+          queryParams.ordering = direction === 'asc' ? 'discountedPrice' : '-discountedPrice';
+        } else if (field === 'newest') {
+          queryParams.ordering = '-createdAt';
+        }
+      }
+    }
+    
+    const response = await axios.get(`${API_BASE_URL}/products/`, { params: queryParams });
+    
+    // Ensure we always return an array for results
+    return {
+      count: response.data.count || 0,
+      results: Array.isArray(response.data.results) ? response.data.results : 
+               (Array.isArray(response.data) ? response.data : [])
+    };
   } catch (error) {
     console.error('Error fetching products:', error);
-    return [];
+    return { count: 0, results: [] };
   }
 };
 

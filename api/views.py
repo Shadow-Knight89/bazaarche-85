@@ -1,4 +1,3 @@
-
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
@@ -12,6 +11,8 @@ import os
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.pagination import PageNumberPagination
 
 from .models import Product, Category, Comment, Purchase, PurchaseItem, ShippingAddress
 from .serializers import (
@@ -58,11 +59,19 @@ def register_view(request):
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 12
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['customId']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['category']
+    search_fields = ['name', 'description', 'customId']
+    ordering_fields = ['name', 'price', 'discountedPrice', 'createdAt']
+    pagination_class = StandardResultsSetPagination
     
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
@@ -73,9 +82,21 @@ class ProductViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         queryset = Product.objects.all()
+        
+        # Filter by customId
         customId = self.request.query_params.get('customId', None)
         if customId is not None:
             queryset = queryset.filter(customId=customId)
+        
+        # Filter by price range
+        min_price = self.request.query_params.get('min_price', None)
+        if min_price is not None:
+            queryset = queryset.filter(discountedPrice__gte=min_price)
+        
+        max_price = self.request.query_params.get('max_price', None)
+        if max_price is not None:
+            queryset = queryset.filter(discountedPrice__lte=max_price)
+            
         return queryset
 
 class CategoryViewSet(viewsets.ModelViewSet):

@@ -6,14 +6,25 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useNavigate, Link } from "react-router-dom";
 import { useAppContext } from "../contexts/AppContext";
 import { toast } from "@/components/ui/use-toast";
+import { configureAxiosCSRF } from "../utils/api/base";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [isRateLimited, setIsRateLimited] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const navigate = useNavigate();
   const { login, checkLoginRateLimit, resetCart } = useAppContext();
+
+  // Initialize CSRF token on component mount
+  useEffect(() => {
+    const initCSRF = async () => {
+      await configureAxiosCSRF();
+    };
+    
+    initCSRF();
+  }, []);
 
   // Check rate limit status on component load
   useEffect(() => {
@@ -40,7 +51,7 @@ const Login = () => {
     }
   }, [isRateLimited, timeRemaining]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Check if rate limited
@@ -59,20 +70,36 @@ const Login = () => {
     // Reset cart when logging in (to fix the cart persistence issue between accounts)
     resetCart();
     
-    const success = login(username, password);
+    setIsLoading(true);
     
-    if (success) {
-      toast({
-        title: "ورود موفق",
-        description: "با موفقیت وارد شدید",
-      });
-      navigate("/");
-    } else {
+    try {
+      // Make sure CSRF token is configured before login
+      await configureAxiosCSRF();
+      
+      const success = await login(username, password);
+      
+      if (success) {
+        toast({
+          title: "ورود موفق",
+          description: "با موفقیت وارد شدید",
+        });
+        navigate("/");
+      } else {
+        toast({
+          title: "خطا",
+          description: "نام کاربری یا رمز عبور اشتباه است",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Login error:", error);
       toast({
         title: "خطا",
-        description: "نام کاربری یا رمز عبور اشتباه است",
+        description: "مشکلی در فرآیند ورود رخ داد. لطفا دوباره تلاش کنید.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -98,7 +125,7 @@ const Login = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 placeholder="نام کاربری خود را وارد کنید"
-                disabled={isRateLimited}
+                disabled={isRateLimited || isLoading}
               />
             </div>
             
@@ -113,7 +140,7 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="رمز عبور خود را وارد کنید"
-                disabled={isRateLimited}
+                disabled={isRateLimited || isLoading}
               />
             </div>
             
@@ -136,7 +163,9 @@ const Login = () => {
           </CardContent>
           
           <CardFooter className="flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isRateLimited}>ورود</Button>
+            <Button type="submit" className="w-full" disabled={isRateLimited || isLoading}>
+              {isLoading ? "در حال ورود..." : "ورود"}
+            </Button>
             <div className="text-center text-sm">
               حساب کاربری ندارید؟{" "}
               <Link to="/register" className="text-primary hover:underline">

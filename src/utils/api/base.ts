@@ -23,6 +23,14 @@ export const handleApiError = (error: any) => {
         .map(([key, value]) => `${key}: ${value}`)
         .join(', ');
     }
+    
+    // Don't show authentication error toast when it's just a 403 from normal operations
+    if (error.response.status === 403 && 
+        error.response.data?.detail === "Authentication credentials were not provided." &&
+        window.location.pathname.includes('/admin')) {
+      // Skip showing toast for admin authentication errors
+      return Promise.reject(error);
+    }
   } else if (error.request) {
     errorMessage = 'No response from server';
   } else {
@@ -30,7 +38,7 @@ export const handleApiError = (error: any) => {
   }
   
   toast({
-    title: 'Error',
+    title: "Error",
     description: errorMessage,
     variant: "destructive",
   });
@@ -41,7 +49,7 @@ export const handleApiError = (error: any) => {
 // Get CSRF token handling for Django
 export const getCSRFToken = async () => {
   try {
-    await axios.get(`${API_BASE_URL}/csrf/`);
+    const response = await axios.get(`${API_BASE_URL}/csrf/`);
     return document.cookie
         .split('; ')
         .find(row => row.startsWith('csrftoken='))
@@ -54,8 +62,15 @@ export const getCSRFToken = async () => {
 
 // Configure axios to include the CSRF token in requests
 export const configureAxiosCSRF = async () => {
-  const csrfToken = await getCSRFToken();
-  if (csrfToken) {
-    axios.defaults.headers.common['X-CSRFToken'] = csrfToken;
+  try {
+    const csrfToken = await getCSRFToken();
+    if (csrfToken) {
+      axios.defaults.headers.common['X-CSRFToken'] = csrfToken;
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error configuring CSRF token:', error);
+    return false;
   }
 };

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from "react";
+
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, SecurityQuestion, LoginAttempt } from "../../types";
 import { toast } from "@/components/ui/use-toast";
 import { 
@@ -6,6 +7,7 @@ import {
   logoutUser as apiLogoutUser, 
   registerUser as apiRegisterUser 
 } from "../../utils/api";
+import { configureAxiosCSRF } from "../../utils/api/base";
 
 interface UserContextType {
   user: User | null;
@@ -65,9 +67,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ]);
   const [user, setUser] = useState<User | null>(null);
   const [loginAttempts, setLoginAttempts] = useState<LoginAttempt[]>([]);
+  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
+
+  // Configure CSRF on initial load
+  useEffect(() => {
+    const initAuth = async () => {
+      await configureAxiosCSRF();
+      setIsAuthInitialized(true);
+    };
+    
+    initAuth();
+  }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
+      // Configure CSRF token before making login request
+      await configureAxiosCSRF();
+      
       const userData = await apiLoginUser(username, password);
       
       if (userData) {
@@ -153,6 +169,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const logout = async () => {
     try {
+      // Configure CSRF token before making logout request
+      await configureAxiosCSRF();
       await apiLogoutUser();
     } catch (error) {
       console.error('Error during logout:', error);

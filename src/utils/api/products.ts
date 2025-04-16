@@ -39,7 +39,12 @@ export const fetchProductByCustomId = async (customId: string) => {
 // Create a product
 export const createProduct = async (productData: any) => {
   try {
-    await configureAxiosCSRF();
+    // Make sure CSRF token is set before creating product
+    const csrfConfigured = await configureAxiosCSRF();
+    if (!csrfConfigured) {
+      throw new Error('Could not configure CSRF token');
+    }
+    
     const response = await axios.post(`${API_BASE_URL}/products/`, productData);
     toast({
       title: "Success",
@@ -54,7 +59,12 @@ export const createProduct = async (productData: any) => {
 // Update a product
 export const updateProduct = async (id: string, productData: any) => {
   try {
-    await configureAxiosCSRF();
+    // Make sure CSRF token is set before updating product
+    const csrfConfigured = await configureAxiosCSRF();
+    if (!csrfConfigured) {
+      throw new Error('Could not configure CSRF token');
+    }
+    
     const response = await axios.put(`${API_BASE_URL}/products/${id}/`, productData);
     toast({
       title: "Success",
@@ -69,7 +79,12 @@ export const updateProduct = async (id: string, productData: any) => {
 // Remove a product
 export const removeProduct = async (id: string | number) => {
   try {
-    await configureAxiosCSRF();
+    // Make sure CSRF token is set before removing product
+    const csrfConfigured = await configureAxiosCSRF();
+    if (!csrfConfigured) {
+      throw new Error('Could not configure CSRF token');
+    }
+    
     const response = await axios.delete(`${API_BASE_URL}/products/${id}/`);
     toast({
       title: "Success",

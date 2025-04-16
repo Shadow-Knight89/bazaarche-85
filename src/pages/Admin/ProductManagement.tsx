@@ -1,4 +1,4 @@
-import { useState, useRef, ChangeEvent } from "react";
+import { useState, useRef, useEffect, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,10 +12,13 @@ import { Product } from "../../types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { uploadImage, createProduct, updateProduct, removeProduct } from "../../utils/api";
+import { uploadImage, createProduct, updateProduct, removeProduct, fetchProducts, configureAxiosCSRF } from "../../utils/api";
 
 const ProductManagement = () => {
-  const { products, categories } = useAppContext();
+  const { categories, user } = useAppContext();
+  const [loadedProducts, setLoadedProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // State for adding/updating a product
   const [name, setName] = useState("");
@@ -30,7 +33,32 @@ const ProductManagement = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentProductId, setCurrentProductId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Load products on component mount
+  useEffect(() => {
+    const loadProductsFromAPI = async () => {
+      setIsLoading(true);
+      setLoadError(null);
+      
+      try {
+        // Configure CSRF token first
+        await configureAxiosCSRF();
+        
+        // Then fetch products
+        const products = await fetchProducts();
+        setLoadedProducts(Array.isArray(products) ? products : []);
+      } catch (error) {
+        console.error('Error loading products:', error);
+        setLoadError('Failed to load products. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadProductsFromAPI();
+  }, []);
 
   // Handle file upload
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -39,6 +67,9 @@ const ProductManagement = () => {
 
     setIsUploading(true);
     try {
+      // Configure CSRF token first
+      await configureAxiosCSRF();
+      
       const file = files[0];
       const formData = new FormData();
       formData.append('file', file);
@@ -99,19 +130,38 @@ const ProductManagement = () => {
 
     console.log("Adding/updating product:", newProduct);
     
+    setIsSubmitting(true);
+    
     try {
+      // First ensure CSRF token is set
+      await configureAxiosCSRF();
+      
       if (isEditing && currentProductId) {
-        await updateProduct(currentProductId.toString(), newProduct);
-        toast({
-          title: "محصول ویرایش شد",
-          description: "محصول با موفقیت ویرایش شد",
-        });
+        const updatedProduct = await updateProduct(currentProductId.toString(), newProduct);
+        
+        if (updatedProduct) {
+          // Update local products list
+          setLoadedProducts(prevProducts => 
+            prevProducts.map(p => p.id === currentProductId ? updatedProduct : p)
+          );
+          
+          toast({
+            title: "محصول ویرایش شد",
+            description: "محصول با موفقیت ویرایش شد",
+          });
+        }
       } else {
-        await createProduct(newProduct);
-        toast({
-          title: "محصول اضافه شد",
-          description: "محصول با موفقیت اضافه شد",
-        });
+        const createdProduct = await createProduct(newProduct);
+        
+        if (createdProduct) {
+          // Add to local products list
+          setLoadedProducts(prevProducts => [...prevProducts, createdProduct]);
+          
+          toast({
+            title: "محصول اضافه شد",
+            description: "محصول با موفقیت اضافه شد",
+          });
+        }
       }
       
       resetForm();
@@ -122,6 +172,8 @@ const ProductManagement = () => {
         description: "خطایی در افزودن یا ویرایش محصول رخ داد",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -137,6 +189,7 @@ const ProductManagement = () => {
     setCustomId("");
     setIsEditing(false);
     setCurrentProductId(null);
+    setIsSubmitting(false);
   };
 
   const handleAddImageFromUrl = () => {
@@ -170,8 +223,8 @@ const ProductManagement = () => {
     setDiscountedPrice(product.discountedPrice?.toString() || "");
     setDescription(product.description);
     setDetailedDescription(product.detailedDescription || "");
-    setImages(product.images);
-    setCategory(product.category);
+    setImages(product.images && product.images.length > 0 ? product.images : ["/placeholder.svg"]);
+    setCategory(product.category || "");
     setCustomId(product.customId || "");
     setCurrentProductId(product.id);
     setIsEditing(true);
@@ -179,11 +232,20 @@ const ProductManagement = () => {
 
   const handleRemoveProduct = async (productId: string | number) => {
     try {
-      await removeProduct(productId.toString());
-      toast({
-        title: "محصول حذف شد",
-        description: "محصول با موفقیت حذف شد",
-      });
+      // First ensure CSRF token is set
+      await configureAxiosCSRF();
+      
+      const result = await removeProduct(productId.toString());
+      
+      if (result) {
+        // Remove from local products list
+        setLoadedProducts(prevProducts => prevProducts.filter(p => p.id !== productId));
+        
+        toast({
+          title: "محصول حذف شد",
+          description: "محصول با موفقیت حذف شد",
+        });
+      }
     } catch (error) {
       console.error("Error removing product:", error);
       toast({
@@ -193,6 +255,19 @@ const ProductManagement = () => {
       });
     }
   };
+
+  // Check if user is not logged in or not an admin
+  if (!user || !user.isAdmin) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="mx-auto h-12 w-12 mb-4 text-gray-400" />
+        <h3 className="text-xl font-medium mb-2">دسترسی محدود شده</h3>
+        <p className="text-muted-foreground">
+          شما اجازه دسترسی به این بخش را ندارید
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -348,14 +423,37 @@ const ProductManagement = () => {
             </div>
           </div>
           
-          <Button type="submit" className="w-full md:w-auto">{isEditing ? "به‌روزرسانی محصول" : "افزودن محصول"}</Button>
+          <Button 
+            type="submit" 
+            className="w-full md:w-auto"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "در حال پردازش..." : (isEditing ? "به‌روزرسانی محصول" : "افزودن محصول")}
+          </Button>
         </form>
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-6">لیست محصولات</h2>
 
-        {products.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-8 text-gray-500">
+            <AlertCircle className="mx-auto h-12 w-12 mb-4 text-gray-400 animate-pulse" />
+            <p>در حال بارگذاری محصولات...</p>
+          </div>
+        ) : loadError ? (
+          <div className="text-center py-8 text-red-500">
+            <AlertCircle className="mx-auto h-12 w-12 mb-4 text-red-400" />
+            <p>{loadError}</p>
+            <Button 
+              className="mt-4" 
+              variant="outline" 
+              onClick={() => window.location.reload()}
+            >
+              تلاش مجدد
+            </Button>
+          </div>
+        ) : loadedProducts.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <AlertCircle className="mx-auto h-12 w-12 mb-4 text-gray-400" />
             <p>هیچ محصولی یافت نشد</p>
@@ -375,11 +473,11 @@ const ProductManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.map((product) => (
+                {loadedProducts.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
                       <img 
-                        src={product.images[0] || '/placeholder.svg'} 
+                        src={product.images && product.images[0] ? product.images[0] : '/placeholder.svg'} 
                         alt={product.name} 
                         className="w-12 h-12 object-cover rounded-md" 
                       />

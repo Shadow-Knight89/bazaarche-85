@@ -195,16 +195,23 @@ const ProductDetail = () => {
               </div>
             </CardContent>
           </Card>
-          
-          {product.detailedDescription && (
-            <div className="space-y-2">
-              <h2 className="text-lg font-semibold">توضیحات بیشتر</h2>
-              <div className="prose max-w-none">
-                <p className="whitespace-pre-line">{product.detailedDescription}</p>
-              </div>
-            </div>
-          )}
         </div>
+      </div>
+      
+      {/* Description Box - Added as requested */}
+      <div className="mt-12">
+        <Card className="w-full overflow-hidden">
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold mb-4">توضیحات محصول</h2>
+            <div className="prose max-w-none">
+              {product.detailedDescription ? (
+                <p className="whitespace-pre-line text-gray-700">{product.detailedDescription}</p>
+              ) : (
+                <p className="whitespace-pre-line text-gray-700">{product.description}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
       
       <div className="mt-12">

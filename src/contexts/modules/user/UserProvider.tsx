@@ -1,14 +1,10 @@
 
 import React, { useState, useEffect } from "react";
+import { UserContext } from "./UserContext";
 import { User, SecurityQuestion, LoginAttempt } from "../../../types";
 import { toast } from "@/components/ui/use-toast";
-import { 
-  loginUser as apiLoginUser, 
-  logoutUser as apiLogoutUser, 
-  registerUser as apiRegisterUser 
-} from "../../../utils/api";
 import { configureAxiosCSRF } from "../../../utils/api/base";
-import { UserContext, UserContextType } from "./UserContext";
+import { handleLogin, handleLogout, handleRegister } from "./auth";
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<User[]>([
@@ -57,104 +53,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    try {
-      // Configure CSRF token before making login request
-      await configureAxiosCSRF();
-      
-      const userData = await apiLoginUser(username, password);
-      
-      if (userData) {
-        const loggedInUser: User = {
-          id: userData.id.toString(),
-          username: userData.username,
-          password: '',
-          isAdmin: username === 'admin',
-          canComment: true
-        };
-        
-        setUser(loggedInUser);
-        
-        setLoginAttempts(prev => 
-          prev.map(attempt => 
-            attempt.ip === "current-ip" ? { ...attempt, count: 0 } : attempt
-          )
-        );
-        
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      const currentAttempt = loginAttempts.find(a => a.ip === "current-ip");
-      
-      if (currentAttempt) {
-        setLoginAttempts(prev => 
-          prev.map(attempt => 
-            attempt.ip === "current-ip" 
-              ? { 
-                  ...attempt, 
-                  count: attempt.count + 1, 
-                  timestamp: Date.now() 
-                } 
-              : attempt
-          )
-        );
-      } else {
-        setLoginAttempts(prev => [
-          ...prev,
-          { ip: "current-ip", count: 1, timestamp: Date.now() }
-        ]);
-      }
-      
-      return false;
-    }
+  const login = async (username: string, password: string) => {
+    return handleLogin(username, password, loginAttempts, setLoginAttempts, setUser);
   };
   
-  const register = async (username: string, password: string, securityQuestion: SecurityQuestion): Promise<boolean> => {
-    try {
-      const userData = await apiRegisterUser({
-        username,
-        password,
-      });
-      
-      if (userData) {
-        const newUser: User = {
-          id: userData.id.toString(),
-          username: userData.username,
-          password: '',
-          isAdmin: false,
-          securityQuestion,
-          canComment: true
-        };
-        
-        setUsers(prev => [...prev, newUser]);
-        
-        toast({
-          title: "ثبت نام موفق",
-          description: "حساب کاربری با موفقیت ایجاد شد",
-        });
-        
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error("Registration error:", error);
-      return false;
-    }
+  const register = async (username: string, password: string, securityQuestion: SecurityQuestion) => {
+    return handleRegister(username, password, securityQuestion, setUsers);
   };
   
   const logout = async () => {
-    try {
-      // Configure CSRF token before making logout request
-      await configureAxiosCSRF();
-      await apiLogoutUser();
-    } catch (error) {
-      console.error('Error during logout:', error);
-    } finally {
-      setUser(null);
-    }
+    return handleLogout(setUser);
   };
   
   const changePassword = (currentPassword: string, newPassword: string) => {
@@ -331,7 +239,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const value: UserContextType = {
+  const value = {
     user,
     users,
     login,

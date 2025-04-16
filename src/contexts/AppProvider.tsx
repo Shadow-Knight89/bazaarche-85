@@ -17,13 +17,14 @@ import { useCommentContext } from "./modules/CommentContext";
 import { useGiftCodeContext } from "./modules/GiftCodeContext";
 import { usePurchaseContext } from "./modules/PurchaseContext";
 import { useStoreContext } from "./modules/StoreContext";
+import { GiftCode } from "../types";
 
 // Create the provider component
 interface AppProviderProps {
   children: React.ReactNode;
 }
 
-export const AppProvider = ({ children }: AppProviderProps) => {
+export const AppContextProvider = ({ children }: AppProviderProps) => {
   return (
     <StoreProvider>
       <UserProvider>
@@ -68,7 +69,8 @@ const PurchaseProviderWrapper: React.FC<{ children: React.ReactNode }> = ({ chil
 const GiftCodeProviderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { applyGiftCode } = useCartContext();
 
-  const handleApplyGiftCode = (giftCode: any) => {
+  // Create a handler that adapts the type
+  const handleApplyGiftCode = (giftCode: GiftCode) => {
     applyGiftCode(giftCode);
   };
 
@@ -122,3 +124,4 @@ const CombinedProvider: React.FC<{ children: React.ReactNode }> = ({ children })
     </AppContext.Provider>
   );
 };
+

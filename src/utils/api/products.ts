@@ -31,9 +31,10 @@ export const fetchProduct = async (id: string) => {
 export const fetchProductByCustomId = async (customId: string) => {
   try {
     await configureAxiosCSRF();
+    
     // First try to search by customId parameter
     const response = await axios.get(`${API_BASE_URL}/products/`, {
-      params: { customId }
+      params: { custom_id: customId }
     });
     
     // If we got results, return the first one

@@ -1,142 +1,71 @@
 
 import React, { useState, useEffect } from "react";
-import { useAppContext } from "../../../contexts/AppContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Product } from "../../../types";
-import { toast } from "@/components/ui/use-toast";
-import ProductForm from "./ProductForm";
 import ProductList from "./ProductList";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { removeProduct } from "../../../utils/api/products";
+import ProductForm from "./ProductForm";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Product } from "../../../types";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
-const ProductManagement: React.FC = () => {
-  const { products, categories } = useAppContext();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTab, setSelectedTab] = useState("list");
+const ProductManagement = () => {
+  const [activeTab, setActiveTab] = useState("list");
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
-  const [productToDelete, setProductToDelete] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    if (productToEdit) {
-      setSelectedTab("add");
-    }
-  }, [productToEdit]);
 
   const handleEditProduct = (product: Product) => {
     setProductToEdit(product);
-  };
-
-  const handleDeleteProduct = (productId: string) => {
-    setProductToDelete(productId);
-  };
-
-  const confirmDeleteProduct = async () => {
-    if (!productToDelete) return;
-
-    setIsDeleting(true);
-    try {
-      await removeProduct(productToDelete);
-      toast({
-        title: "محصول حذف شد",
-        description: "محصول با موفقیت حذف شد",
-      });
-      // The product will be removed from the products list in the context
-    } catch (error) {
-      console.error("Error deleting product:", error);
-      toast({
-        title: "خطا",
-        description: "مشکلی در حذف محصول به وجود آمد",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleting(false);
-      setProductToDelete(null);
-    }
+    setActiveTab("add");
   };
 
   const handleProductSaved = () => {
-    setSelectedTab("list");
+    setActiveTab("list");
     setProductToEdit(null);
   };
 
-  const filteredProducts = products?.filter((product) =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleAddNewClick = () => {
+  const handleCancelEdit = () => {
     setProductToEdit(null);
-    setSelectedTab("add");
+    setActiveTab("list");
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">مدیریت محصولات</h1>
-          <p className="text-muted-foreground mt-2">
-            افزودن، ویرایش و حذف محصولات فروشگاه
-          </p>
-        </div>
-        <Button onClick={handleAddNewClick} className="mt-4 md:mt-0">
-          افزودن محصول جدید
-        </Button>
-      </div>
-
-      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="list">لیست محصولات</TabsTrigger>
-          <TabsTrigger value="add">
-            {productToEdit ? "ویرایش محصول" : "افزودن محصول"}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="list" className="space-y-6">
-          <div className="flex items-center mb-6">
-            <Input
-              placeholder="جستجو در محصولات..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-md"
-            />
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>مدیریت محصولات</CardTitle>
+            {productToEdit && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleCancelEdit}
+                className="flex items-center gap-1"
+              >
+                <X size={16} />
+                انصراف از ویرایش
+              </Button>
+            )}
           </div>
-
-          <ProductList
-            onEditProduct={handleEditProduct}
-            onDeleteProduct={handleDeleteProduct}
-          />
-        </TabsContent>
-
-        <TabsContent value="add">
-          <ProductForm
-            productToEdit={productToEdit}
-            onProductSaved={handleProductSaved}
-          />
-        </TabsContent>
-      </Tabs>
-
-      <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>آیا از حذف این محصول مطمئن هستید؟</AlertDialogTitle>
-            <AlertDialogDescription>
-              این عملیات غیرقابل بازگشت است. محصول از سیستم حذف خواهد شد.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>انصراف</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDeleteProduct}
-              disabled={isDeleting}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {isDeleting ? "در حال حذف..." : "بله، حذف شود"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid grid-cols-2 w-[300px] mb-4">
+              <TabsTrigger value="list">لیست محصولات</TabsTrigger>
+              <TabsTrigger value="add">
+                {productToEdit ? "ویرایش محصول" : "افزودن محصول"}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="list">
+              <ProductList onEditProduct={handleEditProduct} />
+            </TabsContent>
+            <TabsContent value="add">
+              <ProductForm 
+                productToEdit={productToEdit} 
+                onProductSaved={handleProductSaved} 
+              />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };

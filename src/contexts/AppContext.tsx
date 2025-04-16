@@ -10,7 +10,6 @@ export interface AppContextValue {
   
   // From ProductContext
   products: any[];
-  // Fix the return type to match the actual implementation
   addProduct: (product: any) => Promise<any>;
   editProduct: (id: string, product: any) => Promise<any>;
   removeProduct: (id: string) => Promise<boolean>;

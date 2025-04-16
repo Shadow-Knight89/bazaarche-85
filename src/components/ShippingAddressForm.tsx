@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppContext } from "../contexts/AppContext";
 import { toast } from "@/components/ui/use-toast";
-import { createShippingAddress, fetchShippingAddresses } from "../utils/api";
+import { createShippingAddress, fetchShippingAddresses, setDefaultShippingAddress } from "../utils/api";
+import { MapPin, Phone, Mail } from "lucide-react";
 
 interface ShippingAddress {
   id: string;
@@ -75,6 +76,29 @@ const ShippingAddressForm = ({ onAddressSelected }: ShippingAddressFormProps) =>
   const handleSelectAddress = (addressId: string) => {
     setSelectedAddressId(addressId);
     onAddressSelected(addressId);
+  };
+
+  const handleSetDefaultAddress = async (addressId: string) => {
+    try {
+      setLoading(true);
+      await setDefaultShippingAddress(addressId);
+      // Update local state
+      setAddresses(prevAddresses => 
+        prevAddresses.map(addr => ({
+          ...addr,
+          isDefault: addr.id === addressId
+        }))
+      );
+    } catch (error) {
+      console.error("Error setting default address:", error);
+      toast({
+        title: "خطا",
+        description: "خطا در تنظیم آدرس پیش‌فرض",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmitNewAddress = async (e: React.FormEvent) => {
@@ -158,15 +182,38 @@ const ShippingAddressForm = ({ onAddressSelected }: ShippingAddressFormProps) =>
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-medium">{addr.city}</p>
-                    <p className="text-sm text-gray-600 mt-1">{addr.address}</p>
-                    <div className="mt-2 flex gap-4 text-sm text-gray-500">
-                      <p>کد پستی: {addr.postalCode}</p>
-                      <p>تلفن: {addr.phoneNumber}</p>
+                    <div className="flex items-start mt-1">
+                      <MapPin size={16} className="shrink-0 mt-0.5 text-gray-500 ml-1" />
+                      <p className="text-sm text-gray-600">{addr.address}</p>
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <Mail size={14} className="ml-1" />
+                        <p>کد پستی: {addr.postalCode}</p>
+                      </div>
+                      <div className="flex items-center">
+                        <Phone size={14} className="ml-1" />
+                        <p>تلفن: {addr.phoneNumber}</p>
+                      </div>
                     </div>
                   </div>
-                  {addr.isDefault && (
-                    <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded">پیش‌فرض</span>
-                  )}
+                  <div className="flex flex-col items-end gap-2">
+                    {addr.isDefault ? (
+                      <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded">پیش‌فرض</span>
+                    ) : (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSetDefaultAddress(addr.id);
+                        }}
+                      >
+                        تنظیم به عنوان پیش‌فرض
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -180,7 +227,9 @@ const ShippingAddressForm = ({ onAddressSelected }: ShippingAddressFormProps) =>
           type="button" 
           variant="outline" 
           onClick={() => setShowNewForm(true)}
+          className="flex items-center gap-2"
         >
+          <MapPin size={16} />
           افزودن آدرس جدید
         </Button>
       ) : (

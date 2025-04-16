@@ -33,24 +33,28 @@ export const handleApiError = (error: any) => {
   console.error('API Error:', error);
   
   let errorMessage = 'خطایی رخ داد. لطفا دوباره تلاش کنید.';
+  let suppressMessage = false;
   
   if (error?.response?.data?.detail) {
     errorMessage = error.response.data.detail;
     
     // Don't show the "Authentication credentials were not provided" message to users
-    if (errorMessage === "Authentication credentials were not provided.") {
+    if (errorMessage === "Authentication credentials were not provided." || 
+        errorMessage === "Authentication credentials were not provided") {
       console.warn("Authentication error - suppressed from UI");
-      return Promise.reject(error);
+      suppressMessage = true;
     }
   } else if (error?.message) {
     errorMessage = error.message;
   }
   
-  toast({
-    title: "خطا",
-    description: errorMessage,
-    variant: "destructive",
-  });
+  if (!suppressMessage) {
+    toast({
+      title: "خطا",
+      description: errorMessage,
+      variant: "destructive",
+    });
+  }
   
   return Promise.reject(error);
 };

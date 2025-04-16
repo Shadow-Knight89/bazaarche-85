@@ -13,6 +13,9 @@ export const fetchProducts = async (params?: FetchProductsParams) => {
   try {
     await configureAxiosCSRF();
     
+    console.log('Fetching products with params:', params);
+    console.log('API_BASE_URL:', API_BASE_URL);
+    
     // Prepare query parameters
     const queryParams: any = {};
     
@@ -35,7 +38,14 @@ export const fetchProducts = async (params?: FetchProductsParams) => {
       }
     }
     
-    const response = await axios.get(`${API_BASE_URL}/products/`, { params: queryParams });
+    console.log('Making request to:', `${API_BASE_URL}/products/`, { params: queryParams });
+    
+    const response = await axios.get(`${API_BASE_URL}/products/`, { 
+      params: queryParams,
+      withCredentials: true, // Ensure cookies are sent with request
+    });
+    
+    console.log('Products API response:', response.data);
     
     // Ensure we always return an array for results
     return {
@@ -45,6 +55,15 @@ export const fetchProducts = async (params?: FetchProductsParams) => {
     };
   } catch (error) {
     console.error('Error fetching products:', error);
+    // Log more details about the error
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers,
+      });
+    }
     return { count: 0, results: [] };
   }
 };
@@ -53,10 +72,21 @@ export const fetchProducts = async (params?: FetchProductsParams) => {
 export const fetchProduct = async (id: string) => {
   try {
     await configureAxiosCSRF();
-    const response = await axios.get(`${API_BASE_URL}/products/${id}/`);
+    console.log(`Fetching product with ID: ${id}`);
+    const response = await axios.get(`${API_BASE_URL}/products/${id}/`, {
+      withCredentials: true,
+    });
+    console.log('Product API response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching product:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
     throw error;
   }
 };
@@ -65,11 +95,15 @@ export const fetchProduct = async (id: string) => {
 export const fetchProductByCustomId = async (customId: string) => {
   try {
     await configureAxiosCSRF();
+    console.log(`Fetching product with customId: ${customId}`);
     
     // First try to search by customId parameter
     const response = await axios.get(`${API_BASE_URL}/products/`, {
-      params: { custom_id: customId }
+      params: { custom_id: customId },
+      withCredentials: true,
     });
+    
+    console.log('Product by customId API response:', response.data);
     
     // If we got results, return the first one
     if (response.data && Array.isArray(response.data.results) && response.data.results.length > 0) {
@@ -92,6 +126,13 @@ export const fetchProductByCustomId = async (customId: string) => {
     throw new Error('Product not found');
   } catch (error) {
     console.error('Error fetching product by custom ID:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
     throw error;
   }
 };
@@ -101,6 +142,7 @@ export const createProduct = async (productData: any) => {
   try {
     // Make sure CSRF token is set before creating product
     await configureAxiosCSRF();
+    console.log('Creating product with data:', productData);
     
     const response = await axios.post(`${API_BASE_URL}/products/`, productData, {
       headers: {
@@ -109,12 +151,22 @@ export const createProduct = async (productData: any) => {
       withCredentials: true
     });
     
+    console.log('Create product API response:', response.data);
+    
     toast({
       title: "موفق",
       description: "محصول با موفقیت ایجاد شد",
     });
     return response.data;
   } catch (error) {
+    console.error('Error creating product:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
     return handleApiError(error);
   }
 };
@@ -124,6 +176,7 @@ export const updateProduct = async (id: string, productData: any) => {
   try {
     // Make sure CSRF token is set before updating product
     await configureAxiosCSRF();
+    console.log(`Updating product ${id} with data:`, productData);
     
     const response = await axios.put(`${API_BASE_URL}/products/${id}/`, productData, {
       headers: {
@@ -132,12 +185,22 @@ export const updateProduct = async (id: string, productData: any) => {
       withCredentials: true
     });
     
+    console.log('Update product API response:', response.data);
+    
     toast({
       title: "موفق",
       description: "محصول با موفقیت به‌روزرسانی شد",
     });
     return response.data;
   } catch (error) {
+    console.error('Error updating product:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
     return handleApiError(error);
   }
 };
@@ -147,6 +210,7 @@ export const removeProduct = async (id: string | number) => {
   try {
     // Make sure CSRF token is set before removing product
     await configureAxiosCSRF();
+    console.log(`Removing product with ID: ${id}`);
     
     const response = await axios.delete(`${API_BASE_URL}/products/${id}/`, {
       headers: {
@@ -155,12 +219,22 @@ export const removeProduct = async (id: string | number) => {
       withCredentials: true
     });
     
+    console.log('Remove product API response:', response.data);
+    
     toast({
       title: "موفق",
       description: "محصول با موفقیت حذف شد",
     });
     return response.data;
   } catch (error) {
+    console.error('Error removing product:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
     return handleApiError(error);
   }
 };

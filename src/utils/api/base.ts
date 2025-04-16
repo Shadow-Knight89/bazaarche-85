@@ -12,18 +12,30 @@ let csrfConfigured = false;
 // Configure axios for CSRF protection
 export const configureAxiosCSRF = async () => {
   try {
+    console.log('Configuring CSRF protection, current status:', { csrfConfigured });
+    
     if (!csrfConfigured) {
       // Enable sending cookies with cross-domain requests
       axios.defaults.withCredentials = true;
       
+      console.log('Requesting CSRF token from:', `${API_BASE_URL}/csrf/`);
+      
       // Get CSRF token from server and set in cookies
-      await axios.get(`${API_BASE_URL}/csrf/`);
+      const response = await axios.get(`${API_BASE_URL}/csrf/`);
+      console.log('CSRF token response:', response.data);
       
       csrfConfigured = true;
     }
     return true;
   } catch (error) {
     console.error('Error configuring CSRF:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
     return false;
   }
 };

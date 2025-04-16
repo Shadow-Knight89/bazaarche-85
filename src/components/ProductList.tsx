@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { fetchProducts, configureAxiosCSRF } from '../utils/api';
 import ProductCard from './ProductCard';
 import ProductFilters, { FilterValues } from './ProductFilters';
@@ -14,9 +14,25 @@ const ProductList: React.FC<ProductListProps> = ({ categories = [] }) => {
     const [filters, setFilters] = useState<FilterValues>({});
     const [currentPage, setCurrentPage] = useState(1);
     
+    // Initialize CSRF before fetching data
+    useEffect(() => {
+        const initCSRF = async () => {
+            console.log('ProductList - Initializing CSRF');
+            try {
+                await configureAxiosCSRF();
+                console.log('ProductList - CSRF initialized successfully');
+            } catch (err) {
+                console.error('ProductList - CSRF initialization error:', err);
+            }
+        };
+        
+        initCSRF();
+    }, []);
+    
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['products', filters, currentPage],
         queryFn: async () => {
+            console.log('ProductList - Fetching products with params:', { filters, currentPage });
             await configureAxiosCSRF(); // Ensure CSRF token is set
             return fetchProducts({
                 ...filters,
@@ -25,21 +41,28 @@ const ProductList: React.FC<ProductListProps> = ({ categories = [] }) => {
         }
     });
     
+    useEffect(() => {
+        console.log('ProductList - Query results:', { data, isLoading, error });
+    }, [data, isLoading, error]);
+    
     // Ensure products is always an array
     const products = data && data.results ? Array.isArray(data.results) ? data.results : [] : [];
     const totalPages = data?.count ? Math.ceil(data.count / 12) : 0; // Assuming 12 products per page
     
     const handleFilterChange = (newFilters: FilterValues) => {
+        console.log('ProductList - Filter changed:', newFilters);
         setFilters(newFilters);
         setCurrentPage(1); // Reset to first page when filters change
     };
     
     const handleResetFilters = () => {
+        console.log('ProductList - Filters reset');
         setFilters({});
         setCurrentPage(1);
     };
     
     const handlePageChange = (page: number) => {
+        console.log('ProductList - Page changed to:', page);
         setCurrentPage(page);
     };
 
@@ -54,7 +77,14 @@ const ProductList: React.FC<ProductListProps> = ({ categories = [] }) => {
                 onReset={handleResetFilters}
             />
             
-            {error && <p className="text-center py-4 text-red-500">خطا در دریافت محصولات: {(error as Error).message}</p>}
+            {error && (
+                <div className="text-center py-4 text-red-500">
+                    <p>خطا در دریافت محصولات: {(error as Error).message}</p>
+                    <pre className="text-xs mt-2 bg-gray-100 p-2 rounded overflow-auto max-h-40">
+                        {JSON.stringify(error, null, 2)}
+                    </pre>
+                </div>
+            )}
             
             {isLoading ? (
                 <div className="text-center py-8">
@@ -63,6 +93,17 @@ const ProductList: React.FC<ProductListProps> = ({ categories = [] }) => {
             ) : products.length === 0 ? (
                 <div className="text-center py-8">
                     <p>محصولی یافت نشد.</p>
+                    {/* Display debug info */}
+                    <div className="mt-4 text-xs text-gray-500">
+                        <p>فیلترها: {JSON.stringify(filters)}</p>
+                        <p>صفحه: {currentPage}</p>
+                        <button 
+                            onClick={() => refetch()} 
+                            className="mt-2 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                        >
+                            تلاش مجدد
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <>

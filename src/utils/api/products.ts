@@ -8,7 +8,8 @@ export const fetchProducts = async () => {
   try {
     await configureAxiosCSRF();
     const response = await axios.get(`${API_BASE_URL}/products/`);
-    return response.data;
+    // Ensure we always return an array
+    return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('Error fetching products:', error);
     return [];

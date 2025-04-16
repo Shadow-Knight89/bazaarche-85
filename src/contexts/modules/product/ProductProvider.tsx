@@ -14,9 +14,11 @@ export const ProductProvider = ({ children }: ProductProviderProps) => {
   const loadProducts = async () => {
     try {
       const data = await fetchProducts();
-      setProducts(data);
+      // Ensure data is always an array
+      setProducts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error loading products:", error);
+      setProducts([]);
     }
   };
 

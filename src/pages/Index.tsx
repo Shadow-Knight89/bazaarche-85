@@ -1,28 +1,29 @@
 
-import React, { useEffect, useState } from "react";
-import ProductList from "../components/ProductList";
-import Welcome from "../components/Welcome";
-import { fetchCategories } from "../utils/api";
+import React, { useEffect } from 'react';
+import Navbar from '../components/Navbar';
+import Welcome from '../components/Welcome';
+import ProductList from '../components/ProductList';
+import { useAppContext } from '../contexts/AppContext';
+import { useQuery } from '@tanstack/react-query';
+import { fetchCategories } from '../utils/api';
 
 const Index = () => {
-  const [categories, setCategories] = useState([]);
+  const { storeName } = useAppContext();
   
-  useEffect(() => {
-    const loadCategories = async () => {
-      const data = await fetchCategories();
-      setCategories(data);
-    };
-    
-    loadCategories();
-  }, []);
+  // Fetch categories using React Query
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategories
+  });
+  
+  // Make sure categories is always an array
+  const safeCategories = Array.isArray(categories) ? categories : [];
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 pb-8">
+      <Navbar />
       <Welcome />
-      <div className="my-8">
-        <h2 className="text-2xl font-bold mb-4">محصولات</h2>
-        <ProductList categories={categories} />
-      </div>
+      <ProductList categories={safeCategories} />
     </div>
   );
 };

@@ -22,7 +22,7 @@ interface ProductFiltersProps {
 }
 
 const ProductFilters: React.FC<ProductFiltersProps> = ({
-  categories,
+  categories = [],
   maxPriceRange = 10000000,
   onFilterChange,
   onReset
@@ -30,6 +30,9 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   const [filters, setFilters] = useState<FilterValues>({});
   const [priceRange, setPriceRange] = useState<number[]>([0, maxPriceRange]);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Ensure categories is always an array
+  const safeCategories = Array.isArray(categories) ? categories : [];
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFilters = { ...filters, search: e.target.value };
@@ -102,8 +105,8 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                 <SelectValue placeholder="دسته‌بندی" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">همه دسته‌بندی‌ها</SelectItem>
-                {categories.map((category) => (
+                <SelectItem value="all">همه دسته‌بندی‌ها</SelectItem>
+                {safeCategories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
                   </SelectItem>
@@ -120,7 +123,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                 <SelectValue placeholder="مرتب‌سازی بر اساس" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">پیش‌فرض</SelectItem>
+                <SelectItem value="default">پیش‌فرض</SelectItem>
                 <SelectItem value="name_asc">نام (الف تا ی)</SelectItem>
                 <SelectItem value="name_desc">نام (ی تا الف)</SelectItem>
                 <SelectItem value="price_asc">قیمت (کم به زیاد)</SelectItem>

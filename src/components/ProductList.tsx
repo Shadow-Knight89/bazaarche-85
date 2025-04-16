@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 
 interface ProductListProps {
-  categories?: { id: string; name: string }[];
+    categories?: { id: string; name: string }[];
 }
 
 const ProductList: React.FC<ProductListProps> = ({ categories = [] }) => {
@@ -29,7 +29,8 @@ const ProductList: React.FC<ProductListProps> = ({ categories = [] }) => {
         }
     });
     
-    const products = Array.isArray(data?.results) ? data?.results : [];
+    // Ensure products is always an array
+    const products = Array.isArray(data?.results) ? data.results : [];
     const totalPages = data?.count ? Math.ceil(data.count / 12) : 0; // Assuming 12 products per page
     
     const handleFilterChange = (newFilters: FilterValues) => {
@@ -46,10 +47,13 @@ const ProductList: React.FC<ProductListProps> = ({ categories = [] }) => {
         setCurrentPage(page);
     };
 
+    // Make sure categories is always an array, even if undefined is passed
+    const safeCategories = Array.isArray(categories) ? categories : [];
+
     return (
         <div>
             <ProductFilters 
-                categories={categories}
+                categories={safeCategories}
                 maxPriceRange={maxPrice}
                 onFilterChange={handleFilterChange}
                 onReset={handleResetFilters}

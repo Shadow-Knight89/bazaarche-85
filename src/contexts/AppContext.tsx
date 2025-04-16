@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode } from "react";
 import { ProductProvider } from "./modules/product";
 import { CategoryProvider } from "./modules/CategoryContext";
@@ -27,9 +28,10 @@ interface AppContextType {
   
   // From ProductContext
   products: any[];
-  addProduct: (product: any) => Promise<void>;
-  editProduct: (id: string, product: any) => Promise<void>;
-  removeProduct: (id: string) => Promise<void>;
+  // Fix the return type to match the actual implementation
+  addProduct: (product: any) => Promise<any>;
+  editProduct: (id: string, product: any) => Promise<any>;
+  removeProduct: (id: string) => Promise<boolean>;
   getProductByCustomId: (customId: string) => any | undefined;
   
   // From CategoryContext

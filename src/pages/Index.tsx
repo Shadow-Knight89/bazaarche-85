@@ -1,16 +1,17 @@
+
 import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/input"; // Import Input component
-import { Button } from "@/components/ui/button"; // Import Button component
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
-import Navbar from "../components/Navbar"; // Import your Navbar
-import ProductCard from "../components/ProductCard"; // Import your ProductCard
-import { Product } from "../types"; // Import Product type
-import { useAppContext } from "../contexts/AppContext"; // Import context
-import Welcome from "../components/Welcome"; // Import Welcome component
-import { fetchProducts, configureAxiosCSRF } from "../utils/api"; // Import your API functions
+import { Input } from "@/components/ui/input"; 
+import { Button } from "@/components/ui/button"; 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; 
+import Navbar from "../components/Navbar"; 
+import ProductCard from "../components/ProductCard"; 
+import { Product } from "../types"; 
+import { useAppContext } from "../contexts/AppContext"; 
+import Welcome from "../components/Welcome"; 
+import { fetchProducts, configureAxiosCSRF } from "../utils/api"; 
 
 const Index = () => {
-  const { categories } = useAppContext(); // Get categories from context
+  const { categories } = useAppContext(); 
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -60,7 +61,8 @@ const Index = () => {
     setSortOption("newest");
   };
 
-  const filteredProducts = sortProducts(products.filter(filterProducts));
+  // Make sure we have products before filtering
+  const filteredProducts = products.length > 0 ? sortProducts(products.filter(filterProducts)) : [];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -92,11 +94,17 @@ const Index = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">همه دسته‌ها</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.name}>
-                    {category.name}
+                {categories && categories.length > 0 ? (
+                  categories.map((category) => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-categories" disabled>
+                    بدون دسته‌بندی
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -124,12 +132,19 @@ const Index = () => {
         
         <div id="products" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {error && <p className="text-red-500">{error}</p>}
-          {filteredProducts.map((product: Product) => (
-            <ProductCard key={product.id} product={product} /> // Ensure product.id is unique
-          ))}
+          {filteredProducts && filteredProducts.length > 0 ? (
+            filteredProducts.map((product: Product) => (
+              <ProductCard key={product.id} product={product} />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <h3 className="text-xl font-medium mb-2">در حال بارگذاری...</h3>
+              {error && <p className="text-muted-foreground">{error}</p>}
+            </div>
+          )}
         </div>
         
-        {filteredProducts.length === 0 && (
+        {filteredProducts && filteredProducts.length === 0 && !error && (
           <div className="text-center py-12">
             <h3 className="text-xl font-medium mb-2">محصولی یافت نشد</h3>
             <p className="text-muted-foreground">
